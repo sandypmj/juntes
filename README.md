@@ -91,11 +91,12 @@ Hace tres años, transcribir y codificar cientos de relatos costaba meses. Hoy W
 
 **Cómo correrlo en local**
 
+Después de crear el archivo `.env` con `copy`, agrega tu clave de API en ese archivo antes de ejecutar `streamlit run`.
+
 ```bash
 git clone https://github.com/sandypmj/juntes.git
 cd juntes
 pip install -r requirements.txt
-# agrega tu clave de API
 copy .env.example .env
 streamlit run app/app.py
 ```

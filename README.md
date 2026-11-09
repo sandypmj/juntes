@@ -14,20 +14,32 @@ Conectamos a vecinas, jóvenes y personas mayores con rutas reales de acceso a d
 
 ## 2. Founder
 
-**[Tu nombre]** — _[foto en `docs/founder.jpg`]_
+**Sandy Patricia Martínez Jara** — socióloga, docente e investigadora
 
-_[Una línea sobre ti: experiencia en género, seguridad, ciudades seguras, violencia contra las mujeres, juventudes e infancias.]_
+<img src="docs/founder.jpg" alt="Sandy Patricia Martínez Jara" width="280">
 
-Por qué soy la persona indicada: _[completar]_.
+> Más de 14 años conectando políticas públicas, territorio y evidencia para que los derechos lleguen a las personas en su diversidad.
 
-Cómo cubro cada rol con agentes de IA:
+**Por qué soy la persona indicada.** He trabajado en el Estado, la sociedad civil y la cooperación internacional en América Latina, diseñando y fortaleciendo políticas e intervenciones, generando evidencia y articulando gobiernos, instituciones y organizaciones comunitarias, desde una perspectiva de género, interseccionalidad, derechos humanos y diversidad. Conozco desde adentro cómo se formulan los planes que Juntes alimenta y cómo se viven las barreras en los barrios. Hoy sumo la ciencia de datos para transformar información en evidencia útil y visibilizar desigualdades.
+
+**Capacidades que traigo**
+
+- **Estado y políticas públicas:** diseño, implementación y evaluación.
+- **Derechos humanos y diversidad:** género e interseccionalidad.
+- **Territorio y articulación:** gobiernos, instituciones y organizaciones comunitarias.
+- **Conocimiento y formación:** investigación aplicada, gestión del conocimiento y desarrollo de capacidades.
+- **Ciencia de datos:** transformación de información en evidencia para la acción.
+
+**Cómo cubro cada rol con agentes de IA**
 
 | Rol | Cómo lo cubro |
 | --- | --- |
-| Producto | Mi experiencia en territorio y las conversaciones con usuarias |
-| Ingeniería | Claude Code como co-founder técnico |
-| Diseño | Iteración rápida con Claude Code y pruebas con usuarias |
-| Ventas | Red profesional en gestión pública y sociedad civil |
+| Producto | Mi experiencia en políticas públicas y territorio, y las conversaciones con usuarias |
+| Ingeniería | Claude Code como co-founder técnico; yo defino la lógica de las siete dimensiones y reviso cada parte del código |
+| Diseño | Iteración rápida con Claude Code y pruebas con personas usuarias |
+| Ventas | Mi red en gobiernos locales, sociedad civil y consultoría social |
+
+*Juntes es mi apuesta por conectar conocimiento, tecnología y acción para construir ciudades más justas, accesibles y cuidadoras.*
 
 ## 3. Problema
 

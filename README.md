@@ -80,10 +80,10 @@ Hace tres años, transcribir y codificar cientos de relatos costaba meses. Hoy W
 **Cómo correrlo en local**
 
 ```bash
-git clone https://github.com/[usuario]/juntes.git
+git clone https://github.com/sandypmj/juntes.git
 cd juntes
 pip install -r requirements.txt
-cp .env.example .env   # agrega tu clave de API
+copy .env.example .env   # agrega tu clave de API
 streamlit run app/app.py
 ```
 

@@ -95,7 +95,8 @@ Hace tres años, transcribir y codificar cientos de relatos costaba meses. Hoy W
 git clone https://github.com/sandypmj/juntes.git
 cd juntes
 pip install -r requirements.txt
-copy .env.example .env   # agrega tu clave de API
+# agrega tu clave de API
+copy .env.example .env
 streamlit run app/app.py
 ```
 

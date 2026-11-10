@@ -4,7 +4,8 @@
 
 > Juntes escucha las voces del barrio, conecta a las personas con servicios y redes que realmente pueden usar, y convierte cada barrera en evidencia para construir ciudades cuidadoras.
 
-**Demo:** https://juntes-cuidamos.streamlit.app · **Video de respaldo:** _[link — pendiente]_
+**Demo:** https://juntes-cuidamos.streamlit.app  
+**Video de respaldo:** [pendiente]
 
 ---
 
@@ -87,7 +88,8 @@ Hace tres años, transcribir y codificar cientos de relatos costaba meses. Hoy W
 
 ## 6. Demo
 
-**URL:** https://juntes-cuidamos.streamlit.app
+**URL:** https://juntes-cuidamos.streamlit.app  
+**Video de respaldo:** [pendiente]
 
 **Cómo correrlo en local**
 
@@ -101,22 +103,35 @@ copy .env.example .env
 streamlit run app/app.py
 ```
 
-**Capturas del flujo principal** (en `docs/`):
+**Capturas del flujo principal** (versión publicada):
 
-1. _[Voces: relato en el mapa]_
-2. _[Asistente: alternativas con semáforo]_
-3. _[Observatorio de barreras]_
+**1. Asistente.** Ante "cuidado para mi mamá adulta mayor" en Villa El Salvador, la primera alternativa es el CIAM del distrito. La tarjeta muestra el semáforo de las siete dimensiones, el costo, el horario, los requisitos, el teléfono, la web oficial y el botón "Cómo llegar". En la captura, Gemini había alcanzado su límite de uso y la app siguió funcionando con palabras clave.
 
-**Arquitectura:** _[diagrama en `docs/arquitectura.png`]_
+<img src="docs/captura_asistente.png" alt="Asistente: el CIAM de Villa El Salvador como primera alternativa, con semáforo de siete dimensiones, datos de contacto y botón Cómo llegar" width="800">
 
-```
-Audio / texto ─► Whisper (local) o Gemini ─► LLM con salida estructurada ─► Base territorial
-                                                                               (recursos.csv + relatos)
-                                                                                     │
-                                ┌────────────────────────────┬────────────────────────┤
-                                ▼                            ▼                        ▼
-                       Alternativas viables         Mapa de voces y memoria     Observatorio de barreras
-                         (semáforo 7D)              (Folium, ruta sonora)          (dashboard)
+**2. Voces.** El mapa de relatos de Villa El Salvador tiene capas de miedo, seguridad, cuidado, cultura, memoria, verde y accesibilidad. Los puntos son aproximados y nunca señalan viviendas.
+
+<img src="docs/captura_voces.png" alt="Voces: mapa de Villa El Salvador con relatos en las capas miedo, seguridad y memoria" width="800">
+
+**3. Observatorio.** Las barreras sin solución se agrupan por ámbito, dimensión y distrito. El tablero separa los registros reales de los sintéticos y avisa que los sintéticos no son evidencia.
+
+<img src="docs/captura_observatorio.png" alt="Observatorio de barreras: métricas de barreras, búsquedas sin alternativa y gráficos por ámbito, dimensión y distrito" width="800">
+
+**Arquitectura**
+
+```mermaid
+flowchart TD
+    A["Consulta o relato<br/>(texto o audio)"] --> B{"¿Es audio?"}
+    B -- "sí" --> C["Transcripción<br/>Whisper local o Gemini"]
+    B -- "no" --> D{"¿Gemini disponible<br/>y con cuota?"}
+    C --> D
+    D -- "sí" --> E["Gemini con salida estructurada<br/>(respuestas en caché)"]
+    D -- "no" --> F["Respaldo por<br/>palabras clave"]
+    E --> G[("Base territorial<br/>recursos.csv + relatos")]
+    F --> G
+    G --> H["Asistente:<br/>alternativas con semáforo"]
+    G --> I["Voces:<br/>mapa de relatos"]
+    G --> J["Observatorio<br/>de barreras"]
 ```
 
 **Modelos y APIs, y por qué**
@@ -139,7 +154,24 @@ Gratis para la comunidad. Pagan quienes obtienen valor institucional. La coopera
 
 **Fuentes de ingreso, de mayor a menor peso:** consultoras y empresas (líneas base sociales y participación ciudadana) · organizaciones · pilotos municipales · cooperación y fondos concursables como complemento (máximo un tercio del ingreso).
 
-**Costo por usuario:** transcripción local (casi cero), LLM a centavos por relato o consulta, hosting gratuito al inicio. El costo principal es la facilitación en campo. _[Completar con el cálculo de tokens real.]_
+**Costo por usuario.** El costo principal es la facilitación en campo, no la tecnología.
+
+- **Hoy:** el demo usa el nivel gratuito de Gemini, con costo cero. Ese nivel tiene un límite de solicitudes por día, que se alcanzó durante las pruebas. Dos cosas lo mitigan: la caché, que evita repetir llamadas para textos iguales, y el respaldo por palabras clave, que mantiene la app funcionando cuando se acaba la cuota. Streamlit Community Cloud también es gratuito.
+- **En el nivel de pago:** `gemini-3.5-flash` hoy redirige a Gemini 3.6 Flash. Su precio de lista es USD 1,50 por millón de tokens de entrada y USD 7,50 por millón de salida, y hasta el 31 de diciembre de 2026 cuesta la mitad. Medimos los tokens con la función `count_tokens` de Gemini.
+
+| Uso | Entrada (tokens) | Salida (tokens) | Costo aproximado |
+| --- | --- | --- | --- |
+| Una consulta | ~1.150 (instrucciones 400 + esquema 725 + consulta ~20) | ~100 de respuesta, hasta ~1.000 si el modelo "piensa" | USD 0,003 a 0,009 |
+| Un relato escrito | ~700 (instrucciones 85 + esquema 400 + relato de ~150 palabras) | ~350 (incluye el texto anonimizado), hasta ~1.300 | USD 0,004 a 0,011 |
+| Un relato de 1 minuto de audio transcrito con Gemini | +~1.900 de audio (32 tokens por segundo) | +~250 de transcripción, hasta ~1.200 | USD 0,008 a 0,023 en total |
+
+| Volumen mensual | Costo aproximado |
+| --- | --- |
+| 200 relatos con audio | USD 1,70 a 4,50 |
+| 1.000 consultas | USD 2,50 a 9,20 |
+| **Total** | **USD 4 a 14 al mes (unos S/ 15 a 51, a S/ 3,70 por dólar)** |
+
+El rango depende de cuántos tokens de razonamiento use el modelo, que se cobran como salida. Con Whisper local, la transcripción cuesta cero. Las consultas repetidas no se cobran gracias a la caché. Son estimaciones: el costo real hay que medirlo con el uso.
 
 ## 8. Herramientas del curso
 
@@ -153,7 +185,43 @@ Gratis para la comunidad. Pagan quienes obtienen valor institucional. La coopera
 
 ## 9. Qué hizo el agente
 
-_[Completar al final: qué archivos generó Claude Code, qué partes ajusté yo y qué decisiones tomé.]_
+Construí Juntes entre el 9 y el 10 de noviembre de 2026 con Claude Code como agente de programación. Le di las instrucciones en español, revisé cada resultado y decidí qué subir. Cada paso quedó en el historial de git.
+
+**Qué generó Claude Code**
+
+- **La app** (`app/app.py`): las pestañas Asistente, Voces y Observatorio; el semáforo de siete dimensiones; los mapas con Folium; el tablero del Observatorio; las tarjetas con ícono por ámbito; los datos de contacto con botón "Cómo llegar"; y los botones de búsqueda de ejemplo.
+- **La capa de IA** (`ai/estructurar.py`): esquemas Pydantic para la salida estructurada, la conexión con Gemini (y con Claude, como opción) y el respaldo por palabras clave con sinónimos.
+- **La transcripción** (`ai/transcribir.py`): grabar desde el micrófono o subir un archivo, y transcribir con Whisper local o con Gemini.
+- **Los datos** (`data/`): búsqueda de direcciones, teléfonos y webs en fuentes oficiales (gob.pe). Lo que no se pudo verificar dice "por verificar". También los ejemplos sintéticos, marcados como tales.
+- **La documentación:** este README y el registro de las pruebas con usuarias ([`docs/research/pruebas_usuarias.md`](docs/research/pruebas_usuarias.md)), a partir de las respuestas textuales que le pasé.
+
+**Problemas que resolvió**
+
+- **Gemini saturado (error 503).** Varios modelos de Gemini respondían "high demand". Claude Code probó los modelos disponibles y dejó `gemini-3.5-flash`, que sí respondía. Además, cualquier error de la API, como un 503, el límite de cuota o una falla de red, activa el respaldo por palabras clave, y la app avisa qué modo usó.
+- **Separación de datos reales y sintéticos.** Los CSV públicos de `data/` traen solo ejemplos sintéticos, marcados en el mapa y en las tarjetas. Lo real se guarda en `data/privado/`, que Git ignora. El Observatorio guarda solo categorías, nunca el texto de la consulta, y separa los registros reales de los sintéticos.
+- **Orden de resultados por pertinencia.** Los ejemplos sintéticos, con todas las dimensiones en "sí", aparecían antes que el CIAM real, que estaba "por verificar". Ahora el orden es: pertinencia, después recursos reales antes que sintéticos, y recién después el semáforo.
+- **Caché.** El nivel gratuito de Gemini se agotó con las pruebas. Ahora las respuestas exitosas, de texto y de audio, se guardan en caché, y los errores no.
+- **Whisper con PyAV compatible.** Con PyAV 19, faster-whisper fallaba al leer el audio. Con PyAV 18.1 (`av<19`), Whisper "base" transcribe en local.
+- **Mejoras por las pruebas con usuarias:**
+  - Cuna Más, el CIAM, el INABIF y los comedores de personas adultas mayores.
+  - Sinónimos como guardería, wawa wasi, anciano o tercera edad.
+  - Datos de contacto y el botón "Cómo llegar".
+  - Aviso honesto cuando no hay un recurso.
+  - Búsquedas de movilidad con relatos de las vecinas y contactos útiles.
+  - Un diseño menos plano.
+
+**Qué decidí yo**
+
+- **El marco conceptual:** cinco ámbitos más memoria, y las siete dimensiones de accesibilidad con sus preguntas.
+- **El territorio:** Villa El Salvador y Ventanilla como distritos piloto.
+- **Los cuidados éticos:**
+  - Consentimiento y anonimización.
+  - Nunca ubicar viviendas.
+  - No pedir relatos de violencia en detalle.
+  - Mostrar primero la Línea 100 y el 105.
+  - Usar solo datos sintéticos en el demo público.
+- **El modelo de negocio:** planes, precios y fuentes de ingreso.
+- **La investigación:** a quién entrevistar y quién probaría la app, qué comentarios atender y qué cambiar según ellos. Dejé las fotos de lugares para cuando las organizaciones den permiso.
 
 ## Ética y cuidados
 

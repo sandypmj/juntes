@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Generic, Literal, TypeVar
 
 import anthropic
+import streamlit as st
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, ValidationError
 
@@ -279,13 +280,28 @@ def _relato_respaldo(texto: str) -> RelatoEstructurado:
     )
 
 
+def _clave_en_secrets() -> str:
+    try:
+        return str(st.secrets.get("ANTHROPIC_API_KEY", ""))
+    except Exception:  # Streamlit lanza un error si no existe secrets.toml
+        return ""
+
+
+def obtener_clave() -> str:
+    """Busca la clave en .env o variables de entorno y luego en st.secrets."""
+    for clave in (os.environ.get("ANTHROPIC_API_KEY", ""), _clave_en_secrets()):
+        clave = clave.strip()
+        if clave and clave != CLAVE_DE_EJEMPLO:
+            return clave
+    return ""
+
+
 def hay_clave() -> bool:
-    clave = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-    return bool(clave) and clave != CLAVE_DE_EJEMPLO
+    return bool(obtener_clave())
 
 
 def _cliente() -> anthropic.Anthropic:
-    return anthropic.Anthropic(timeout=45.0, max_retries=1)
+    return anthropic.Anthropic(api_key=obtener_clave(), timeout=45.0, max_retries=1)
 
 
 def _llamar_api(instrucciones: str, texto: str, esquema: type[Esquema]) -> tuple[Esquema | None, str | None]:

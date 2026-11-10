@@ -30,6 +30,8 @@ htmlcov/
 
 # Datos sensibles o pesados
 data/audios/
+data/privado/
+.streamlit/secrets.toml
 
 # Sistema operativo y editores
 .DS_Store

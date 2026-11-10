@@ -2,6 +2,7 @@ streamlit
 pandas
 folium
 streamlit-folium
+altair
 anthropic
 python-dotenv
 pydantic

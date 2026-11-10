@@ -33,10 +33,15 @@ from ai.estructurar import (  # noqa: E402
 
 DATA = Path(os.environ.get("JUNTES_DATA_DIR", ROOT / "data"))
 RUTA_RECURSOS = DATA / "recursos.csv"
-RUTA_BARRERAS = DATA / "barreras.csv"
-RUTA_RELATOS = DATA / "relatos.csv"
 
-COLUMNAS_BARRERAS = ["fecha_mes", "distrito", "ambito", "dimension", "tipo_necesidad", "motivo", "origen"]
+# Los CSV de data/ solo traen ejemplos sintéticos. Lo real va a data/privado/, ignorado por Git.
+DATOS_PRIVADOS = DATA / "privado"
+EJEMPLO_BARRERAS = DATA / "barreras.csv"
+EJEMPLO_RELATOS = DATA / "relatos.csv"
+RUTA_BARRERAS = DATOS_PRIVADOS / "barreras.csv"
+RUTA_RELATOS = DATOS_PRIVADOS / "relatos.csv"
+
+COLUMNAS_BARRERAS = ["fecha_mes", "distrito", "ambito", "dimension", "tipo_necesidad", "motivo", "origen", "busqueda_id"]
 COLUMNAS_RELATOS = [
     "id", "fecha_mes", "distrito", "texto", "lugares", "ambito", "capa",
     "emociones", "memoria", "lat", "lon", "ubicacion", "origen",
@@ -100,6 +105,9 @@ ETIQUETAS_MOTIVO = {
     "dato_por_verificar": "La condición no está confirmada",
     "no_clasificada": "Consulta no clasificada",
 }
+MOTIVOS_SIN_ALTERNATIVA = {"sin_recurso", "condicion_no_cumplida", "no_clasificada"}
+TIPOS_COMUNITARIOS = {"organizacion_mujeres", "olla_comun"}
+TERMINOS_ESPERA = ["lista de espera", "listas de espera", "en espera", "sin cupos", "cupos limitados"]
 
 # Qué recursos responden a cada tipo de necesidad: por tipo de recurso o por texto.
 # "movilidad" y "accesibilidad" no tienen recursos propios todavía.
@@ -137,7 +145,7 @@ ESTILOS = """
 
 
 @st.cache_data
-def cargar_recursos(ruta: Path, _version: float) -> pd.DataFrame:
+def cargar_recursos(ruta: Path, version: float) -> pd.DataFrame:
     df = pd.read_csv(ruta, dtype=str, keep_default_na=False, encoding="utf-8-sig")
     df["lat"] = pd.to_numeric(df["lat"], errors="coerce")
     df["lon"] = pd.to_numeric(df["lon"], errors="coerce")
@@ -145,18 +153,33 @@ def cargar_recursos(ruta: Path, _version: float) -> pd.DataFrame:
 
 
 def leer_csv(ruta: Path, columnas: list[str]) -> pd.DataFrame:
-    if not ruta.exists():
-        return pd.DataFrame(columns=columnas)
-    return pd.read_csv(ruta, dtype=str, keep_default_na=False, encoding="utf-8-sig")
+    try:
+        return pd.read_csv(ruta, dtype=str, keep_default_na=False, encoding="utf-8-sig")
+    except (OSError, pd.errors.EmptyDataError):
+        return pd.DataFrame(columns=columnas, dtype=str)
 
 
-def agregar_fila(ruta: Path, columnas: list[str], fila: dict) -> None:
-    nuevo = not ruta.exists()
-    with open(ruta, "a", newline="", encoding="utf-8") as archivo:
-        escritor = csv.DictWriter(archivo, fieldnames=columnas, lineterminator="\n")
-        if nuevo:
-            escritor.writeheader()
-        escritor.writerow(fila)
+def leer_datos(ejemplo: Path, real: Path, columnas: list[str]) -> pd.DataFrame:
+    """Une los ejemplos publicados con lo real; cualquiera de los dos archivos puede faltar."""
+    partes = [df for df in (leer_csv(ejemplo, columnas), leer_csv(real, columnas)) if not df.empty]
+    if not partes:
+        return pd.DataFrame(columns=columnas, dtype=str)
+    return pd.concat(partes, ignore_index=True).reindex(columns=columnas).fillna("")
+
+
+def agregar_fila(ruta: Path, columnas: list[str], fila: dict) -> bool:
+    """Agrega una fila creando carpeta y archivo si hace falta. Devuelve False si no pudo."""
+    try:
+        ruta.parent.mkdir(parents=True, exist_ok=True)
+        nuevo = not ruta.exists() or ruta.stat().st_size == 0
+        with open(ruta, "a", newline="", encoding="utf-8") as archivo:
+            escritor = csv.DictWriter(archivo, fieldnames=columnas, lineterminator="\n")
+            if nuevo:
+                escritor.writeheader()
+            escritor.writerow(fila)
+    except OSError:
+        return False
+    return True
 
 
 def mes_actual() -> str:
@@ -203,6 +226,52 @@ def buscar_alternativas(recursos: pd.DataFrame, consulta: ConsultaEstructurada, 
     return directas + mismo_ambito[: 3 - len(directas)]
 
 
+def tiene_lista_espera(recurso: dict) -> bool:
+    texto = normalizar(" ".join(recurso[c] for c in ("descripcion", "horario", "requisitos", "canales", "costo")))
+    return any(t in texto for t in TERMINOS_ESPERA)
+
+
+def tiene_dato_por_verificar(recurso: dict) -> bool:
+    texto = normalizar(" ".join(recurso[c] for c in ("costo", "horario", "requisitos", "canales")))
+    return (
+        recurso["estado_verificacion"] == "por_verificar"
+        or any(recurso[d] == "por_verificar" for d in DIMENSIONES)
+        or "verificar" in texto
+    )
+
+
+def es_comunitaria(recurso: dict) -> bool:
+    return recurso["tipo"] in TIPOS_COMUNITARIOS or "comunitari" in normalizar(recurso["nombre"])
+
+
+def sugerir_comunitaria(
+    recursos: pd.DataFrame, consulta: ConsultaEstructurada, distrito: str, alternativas: list[dict]
+) -> dict | None:
+    """Busca una red comunitaria del distrito cuando alguna alternativa tiene espera o dudas."""
+    if not any(tiene_lista_espera(a) or tiene_dato_por_verificar(a) for a in alternativas):
+        return None
+    usados = {a["id"] for a in alternativas}
+    restricciones = consulta.restricciones.activas()
+    opciones = [
+        r for r in recursos.to_dict("records")
+        if r["distrito"] == distrito
+        and es_comunitaria(r)
+        and r["id"] not in usados
+        and not tiene_lista_espera(r)
+        and not any(r[d] == "no" for d in restricciones)
+        and (consulta.tipo_necesidad != "violencia" or r["tipo"] == "organizacion_mujeres")
+    ]
+    if not opciones:
+        return None
+    opciones.sort(key=lambda r: (
+        not es_relevante(r, consulta),
+        r["estado_verificacion"] == "sintetico",
+        -puntaje(r, restricciones),
+        r["id"],
+    ))
+    return {**opciones[0], "complementaria": False}
+
+
 def detectar_barreras(alternativas: list[dict], consulta: ConsultaEstructurada) -> list[tuple[str, str]]:
     """Devuelve (dimensión, motivo) por cada necesidad que quedó sin solución."""
     restricciones = list(consulta.restricciones.activas())
@@ -221,9 +290,13 @@ def detectar_barreras(alternativas: list[dict], consulta: ConsultaEstructurada) 
     return barreras
 
 
-def registrar_barreras(barreras: list[tuple[str, str]], consulta: ConsultaEstructurada, distrito: str) -> None:
-    """Guarda solo categorías: nunca el texto de la consulta ni datos de la persona."""
-    for dimension, motivo in barreras:
+def registrar_barreras(barreras: list[tuple[str, str]], consulta: ConsultaEstructurada, distrito: str) -> bool:
+    """Guarda solo categorías: nunca el texto de la consulta ni datos de la persona.
+
+    busqueda_id es aleatorio y solo sirve para contar una búsqueda con varias barreras una vez.
+    """
+    busqueda_id = uuid.uuid4().hex[:12]
+    resultados = [
         agregar_fila(RUTA_BARRERAS, COLUMNAS_BARRERAS, {
             "fecha_mes": mes_actual(),
             "distrito": distrito,
@@ -232,7 +305,11 @@ def registrar_barreras(barreras: list[tuple[str, str]], consulta: ConsultaEstruc
             "tipo_necesidad": consulta.tipo_necesidad,
             "motivo": motivo,
             "origen": "real",
+            "busqueda_id": busqueda_id,
         })
+        for dimension, motivo in barreras
+    ]
+    return all(resultados)
 
 
 def mostrar_ayuda_urgente() -> None:
@@ -311,10 +388,10 @@ def aviso_verificacion(recurso: dict) -> None:
         st.warning(" ".join(partes) + " Confirma antes de ir.", icon="⚠️")
 
 
-def mostrar_alternativa(numero: int, recurso: dict, restricciones: dict[str, str]) -> None:
+def mostrar_alternativa(titulo: str, recurso: dict, restricciones: dict[str, str]) -> None:
     with st.container(border=True):
         zona = "Nacional" if es_nacional(recurso) else recurso["distrito"]
-        st.subheader(f"{numero}. {recurso['nombre']}")
+        st.subheader(titulo)
         st.caption(f"{zona} · {ETIQUETAS_AMBITO.get(recurso['ambito'], recurso['ambito'])}")
         if recurso["complementaria"]:
             st.info("Alternativa complementaria: es del mismo ámbito, pero puede no resolver lo que necesitas.")
@@ -349,13 +426,14 @@ def pestana_asistente(recursos: pd.DataFrame) -> None:
                 resultado = estructurar_consulta(texto.strip(), distrito)
             alternativas = buscar_alternativas(recursos, resultado.datos, distrito)
             barreras = detectar_barreras(alternativas, resultado.datos)
-            registrar_barreras(barreras, resultado.datos, distrito)
-            st.session_state["asistente"] = (resultado, alternativas, barreras, distrito)
+            guardadas = registrar_barreras(barreras, resultado.datos, distrito)
+            comunitaria = sugerir_comunitaria(recursos, resultado.datos, distrito, alternativas)
+            st.session_state["asistente"] = (resultado, alternativas, barreras, distrito, guardadas, comunitaria)
 
     if "asistente" not in st.session_state:
         return
 
-    resultado, alternativas, barreras, distrito = st.session_state["asistente"]
+    resultado, alternativas, barreras, distrito, guardadas, comunitaria = st.session_state["asistente"]
     consulta = resultado.datos
     if consulta.riesgo:
         mostrar_ayuda_urgente()
@@ -368,14 +446,24 @@ def pestana_asistente(recursos: pd.DataFrame) -> None:
 
     if alternativas:
         for numero, recurso in enumerate(alternativas, start=1):
-            mostrar_alternativa(numero, recurso, restricciones)
+            mostrar_alternativa(f"{numero}. {recurso['nombre']}", recurso, restricciones)
         if len(alternativas) < 3:
             st.caption(f"Solo encontramos {len(alternativas)} alternativa(s) compatible(s) en la base actual.")
+        if comunitaria:
+            motivo = (
+                "Alguna opción tiene lista de espera."
+                if any(tiene_lista_espera(a) for a in alternativas)
+                else "Algunos datos de estas opciones están por verificar."
+            )
+            st.markdown(f"**También puedes buscar apoyo comunitario.** {motivo}")
+            mostrar_alternativa(f"Alternativa comunitaria: {comunitaria['nombre']}", comunitaria, restricciones)
     else:
         st.info("Por ahora no tenemos una alternativa registrada para esta necesidad en tu distrito.")
 
-    if barreras:
+    if barreras and guardadas:
         st.success("Registramos esta barrera de forma anónima para el Observatorio. No guardamos lo que escribiste.")
+    elif barreras:
+        st.warning("No pudimos registrar esta barrera en el Observatorio.", icon="⚠️")
     st.caption("El asistente orienta; no reemplaza la atención ni da asesoría legal.")
 
 
@@ -417,7 +505,7 @@ def guardar_relato(recursos: pd.DataFrame) -> None:
     relato = resultado.datos
     identificador = uuid.uuid4().hex[:8]
     lat, lon, ubicacion = ubicar_relato(relato.lugares, distrito, recursos, identificador)
-    agregar_fila(RUTA_RELATOS, COLUMNAS_RELATOS, {
+    guardado = agregar_fila(RUTA_RELATOS, COLUMNAS_RELATOS, {
         "id": identificador,
         "fecha_mes": mes_actual(),
         "distrito": distrito,
@@ -432,6 +520,9 @@ def guardar_relato(recursos: pd.DataFrame) -> None:
         "ubicacion": ubicacion,
         "origen": "real",
     })
+    if not guardado:
+        st.session_state["voces_error"] = True
+        return
     for clave in ("voces_resultado", "voces_revision", "voces_consentimiento", "voces_texto"):
         st.session_state.pop(clave, None)
     st.session_state["voces_guardado"] = True
@@ -488,13 +579,18 @@ def pestana_voces(recursos: pd.DataFrame) -> None:
     )
     if st.session_state.pop("voces_guardado", False):
         st.success("Relato guardado y agregado al mapa. Gracias por compartirlo.")
+    if st.session_state.pop("voces_error", False):
+        st.error("No pudimos guardar el relato. Inténtalo de nuevo.")
 
     if transcripcion.disponible():
         audio = st.file_uploader("Sube un audio", type=["mp3", "wav", "m4a", "ogg"])
         if audio and st.button("Transcribir audio"):
             with st.spinner("Transcribiendo en esta computadora..."):
                 extension = Path(audio.name).suffix or ".wav"
-                st.session_state["voces_texto"] = transcripcion.transcribir(audio.getvalue(), extension)
+                try:
+                    st.session_state["voces_texto"] = transcripcion.transcribir(audio.getvalue(), extension)
+                except Exception:  # librería incompleta, audio dañado o modelo sin descargar
+                    st.warning("No se pudo transcribir este audio. Puedes pegar aquí el texto del relato.")
     else:
         st.info("La transcripción de audio no está instalada en este equipo. Puedes pegar aquí el texto del relato.")
 
@@ -543,7 +639,7 @@ def pestana_voces(recursos: pd.DataFrame) -> None:
 
     st.subheader("Mapa de voces")
     st.caption("Los puntos son aproximados y nunca señalan viviendas. Activa o desactiva capas en el recuadro del mapa.")
-    relatos = leer_csv(RUTA_RELATOS, COLUMNAS_RELATOS)
+    relatos = leer_datos(EJEMPLO_RELATOS, RUTA_RELATOS, COLUMNAS_RELATOS)
     filtro = st.selectbox("Ver distrito", list(VISTA_MAPA), key="voces_filtro")
     visibles = relatos if filtro == "Todos" else relatos[relatos["distrito"] == filtro]
     st_folium(
@@ -600,7 +696,7 @@ def mapa_recursos(recursos: pd.DataFrame, filtro: str) -> folium.Map:
 def pestana_observatorio(recursos: pd.DataFrame) -> None:
     st.header("Observatorio de barreras")
     st.write("Lo que no tuvo solución se convierte en evidencia por ámbito, dimensión y distrito.")
-    barreras = leer_csv(RUTA_BARRERAS, COLUMNAS_BARRERAS)
+    barreras = leer_datos(EJEMPLO_BARRERAS, RUTA_BARRERAS, COLUMNAS_BARRERAS)
 
     filtro_columna, incluir_columna = st.columns([1, 1])
     filtro = filtro_columna.selectbox("Distrito", list(VISTA_MAPA), key="observatorio_distrito")
@@ -611,8 +707,14 @@ def pestana_observatorio(recursos: pd.DataFrame) -> None:
         datos = datos[datos["origen"] != "sintetico"]
 
     sinteticas = int((datos["origen"] == "sintetico").sum())
-    total, reales, ejemplo = st.columns(3)
+    sin_alternativa = datos.loc[datos["motivo"].isin(MOTIVOS_SIN_ALTERNATIVA), "busqueda_id"].nunique()
+    total, sin_opcion, reales, ejemplo = st.columns(4)
     total.metric("Barreras registradas", len(datos))
+    sin_opcion.metric(
+        "Búsquedas sin alternativa viable",
+        sin_alternativa,
+        help="Búsquedas sin recurso registrado o en las que ninguna opción cumple lo que la persona necesita.",
+    )
     reales.metric("Registros reales", len(datos) - sinteticas)
     ejemplo.metric("Registros sintéticos", sinteticas)
     if sinteticas:
@@ -628,7 +730,7 @@ def pestana_observatorio(recursos: pd.DataFrame) -> None:
             mostrar_grafico("Por dimensión", datos, "dimension", ETIQUETAS_DIMENSION)
         mostrar_grafico("Por distrito", datos, "distrito", {})
         with st.expander("Ver los datos en tabla"):
-            tabla = datos.assign(
+            tabla = datos.drop(columns="busqueda_id").assign(
                 ambito=datos["ambito"].map(lambda v: ETIQUETAS_AMBITO.get(v, v)),
                 dimension=datos["dimension"].map(lambda v: ETIQUETAS_DIMENSION.get(v, v)),
                 tipo_necesidad=datos["tipo_necesidad"].map(lambda v: ETIQUETAS_NECESIDAD.get(v, v)),

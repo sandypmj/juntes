@@ -149,7 +149,7 @@ Gratis para la comunidad. Pagan quienes obtienen valor institucional. La coopera
 | Plan | Para quién | Qué recibe | Precio (hipótesis) |
 | --- | --- | --- | --- |
 | Comunidad | Personas, ollas comunes, colectivos | Asistente, mapa, relatos y, como próximo paso, rutas sonoras | Gratis |
-| Organizaciones | ONG, colegios, centros culturales, universidades | Panel de su territorio, reportes y, como próximo paso, ruta sonora a medida | S/ 100 al mes o S/ 1,500 por ruta |
+| Organizaciones | ONG, colegios, centros culturales, universidades | Panel de su territorio, reportes y, como próximo paso, ruta sonora a medida | S/ 100 al mes (próximo paso: S/ 1,500 por ruta sonora) |
 | Institucional | Consultoras, empresas, inmobiliarias, municipalidades | Diagnóstico participativo con enfoque de género, observatorio, informe anexable | Desde S/ 12,000 por proyecto |
 
 **Fuentes de ingreso, de mayor a menor peso:** consultoras y empresas (líneas base sociales y participación ciudadana) · organizaciones · pilotos municipales · cooperación y fondos concursables como complemento (máximo un tercio del ingreso).

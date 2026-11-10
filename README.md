@@ -83,7 +83,7 @@ Conectamos a vecinas, jóvenes y personas mayores con rutas reales de acceso a d
 
 ## 5. Why now
 
-Hace tres años, transcribir y codificar cientos de relatos costaba meses. Hoy Whisper transcribe el audio en local, sin que la grabación salga de la computadora, y un LLM estructura cada relato o consulta en segundos y por centavos. Cuando hay clave de API, el texto de consultas y relatos se envía al proveedor de IA configurado (hoy Google Gemini); sin clave, ese texto no sale de la computadora.
+Hace tres años, transcribir y codificar cientos de relatos costaba meses. Hoy Whisper puede transcribir el audio en local, sin que la grabación salga de la computadora, y un LLM estructura cada relato o consulta en segundos y por centavos. Cuando hay clave de API, el texto de consultas y relatos se envía al proveedor de IA configurado (hoy Google Gemini); sin clave, ese texto no sale de la computadora.
 
 ## 6. Demo
 
@@ -110,19 +110,20 @@ streamlit run app/app.py
 **Arquitectura:** _[diagrama en `docs/arquitectura.png`]_
 
 ```
-Audio / texto ─► Whisper (local) ─► LLM con salida estructurada ─► Base territorial
-                                                                    (recursos.csv + relatos)
-                                                                          │
-                     ┌────────────────────────────┬────────────────────────┤
-                     ▼                            ▼                        ▼
-            Alternativas viables         Mapa de voces y memoria     Observatorio de barreras
-              (semáforo 7D)              (Folium, ruta sonora)          (dashboard)
+Audio / texto ─► Whisper (local) o Gemini ─► LLM con salida estructurada ─► Base territorial
+                                                                               (recursos.csv + relatos)
+                                                                                     │
+                                ┌────────────────────────────┬────────────────────────┤
+                                ▼                            ▼                        ▼
+                       Alternativas viables         Mapa de voces y memoria     Observatorio de barreras
+                         (semáforo 7D)              (Folium, ruta sonora)          (dashboard)
 ```
 
 **Modelos y APIs, y por qué**
 
-- **Whisper en local:** el audio es sensible, por eso se transcribe en la computadora y no se envía a ningún servicio.
-- **LLM con salidas estructuradas:** clasifica relatos y consultas en ámbito, dimensión, lugar y barrera con un esquema fijo, para poder agregarlos. Cuando hay clave de API, el texto de consultas y relatos se envía al proveedor de IA configurado (hoy Google Gemini); sin clave, la app usa un respaldo por palabras clave y ese texto no sale de la computadora.
+- **Whisper (modelo "base") en local:** cuando la app corre en una computadora con `faster-whisper` instalado, el audio, grabado con el micrófono o subido como archivo, se transcribe ahí mismo y no sale del equipo. En la versión publicada, Whisper no está instalado para que la app siga liviana, y el audio se transcribe con Google Gemini. Por eso el demo público usa solo datos sintéticos. Sin Whisper ni Gemini, la persona pega el texto. La app siempre muestra qué método usó.
+- **LLM con salidas estructuradas:** clasifica relatos y consultas en ámbito, dimensión, lugar y barrera con un esquema fijo, para poder agregarlos. Cuando hay clave de API, el texto de consultas y relatos se envía al proveedor de IA configurado (hoy Google Gemini); sin clave, la app usa un respaldo por palabras clave y ese texto no sale de la computadora. Las respuestas se guardan en caché en la memoria del servidor por 7 días, así una consulta o un relato repetido no gasta cuota de nuevo.
+- **Orden de las alternativas:** primero la pertinencia (que el recurso responda a la necesidad), después los recursos reales antes que los ejemplos sintéticos, y recién después el semáforo. Un dato "por verificar" no hunde a un recurso pertinente.
 - **Folium:** mapa con capas, liviano y sin costo.
 - **Texto a voz (opcional):** ruta sonora con voz sintética cuando la persona prefiere no ser reconocida.
 
@@ -144,7 +145,7 @@ Gratis para la comunidad. Pagan quienes obtienen valor institucional. La coopera
 
 | Herramienta | Sesión | Dónde está en el repo |
 | --- | --- | --- |
-| Whisper (voz a texto) | 13 | `ai/transcribir.py` |
+| Whisper (voz a texto) | 13 | `ai/transcribir.py`: Whisper "base" en local; en la versión publicada, Gemini transcribe el audio |
 | LLM con salidas estructuradas | 08 | `ai/estructurar.py` |
 | Mapas con Folium | 06 | `app/app.py` (pestañas Voces y Observatorio) |
 | Dashboard | 05 | `app/app.py` (pestaña Observatorio) |
@@ -163,7 +164,8 @@ _[Completar al final: qué archivos generó Claude Code, qué partes ajusté yo 
 - El asistente orienta; no reemplaza la atención ni da asesoría legal.
 - Cada dato indica si está verificado, reportado por la comunidad o sin verificar.
 - Los datos del demo son públicos, propios o sintéticos (marcados como tales).
-- El audio se transcribe en local. Cuando hay clave de API, el texto de consultas y relatos se envía al proveedor de IA configurado (hoy Google Gemini); sin clave, ese texto no sale de la computadora.
+- Cuando la app corre en una computadora con Whisper, el audio se transcribe en local y no sale del equipo. En la versión publicada, el audio se transcribe con Google Gemini; por eso el demo público usa solo datos sintéticos.
+- Cuando hay clave de API, el texto de consultas y relatos se envía al proveedor de IA configurado (hoy Google Gemini); sin clave, ese texto no sale de la computadora.
 - En el nivel gratuito de Gemini, el proveedor puede usar los datos para mejorar sus servicios; por eso el demo público usa solo datos sintéticos.
 - Los relatos y barreras reales no se suben al repositorio público; solo se publican los ejemplos sintéticos.
 

@@ -2,7 +2,7 @@
 
 Usa Claude si hay ANTHROPIC_API_KEY y Gemini si hay GEMINI_API_KEY, en .env o st.secrets.
 Si no hay clave, o si la llamada falla, usa reglas simples por palabras clave para que la
-app siga funcionando.
+app siga funcionando. Las respuestas exitosas se guardan en caché para no gastar cuota.
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 import re
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Generic, Literal, TypeVar
 
@@ -130,6 +130,7 @@ class Resultado(Generic[Esquema]):
     datos: Esquema
     fuente: Fuente
     aviso: str | None = None
+    temas: list[str] = field(default_factory=list)  # necesidades que reconocen las palabras clave
 
 
 INSTRUCCIONES_CONSULTA = """Clasificas consultas de personas de barrios populares de Lima y Callao \
@@ -439,13 +440,49 @@ def _llamar_claude(instrucciones: str, texto: str, esquema: type[Esquema]) -> tu
     return respuesta.parsed_output, None
 
 
+class _FalloIA(Exception):
+    """Se lanza dentro de la función cacheada para que los errores nunca queden en caché."""
+
+    def __init__(self, aviso: str | None):
+        super().__init__(aviso)
+        self.aviso = aviso
+
+
+ESQUEMAS: dict[str, type[BaseModel]] = {
+    "ConsultaEstructurada": ConsultaEstructurada,
+    "RelatoEstructurado": RelatoEstructurado,
+}
+
+
+@st.cache_data(ttl=7 * 24 * 60 * 60, max_entries=1000, show_spinner=False)
+def _ia_cacheada(proveedor: Fuente, instrucciones: str, texto: str, nombre_esquema: str) -> dict:
+    """Guarda en memoria las respuestas exitosas: un texto repetido no vuelve a gastar cuota.
+
+    La caché vive solo en la memoria del servidor (no en disco) y caduca a los 7 días.
+    """
+    llamar = _llamar_claude if proveedor == "claude" else _llamar_gemini
+    datos, aviso = llamar(instrucciones, texto, ESQUEMAS[nombre_esquema])
+    if datos is None:
+        raise _FalloIA(aviso)
+    return datos.model_dump()
+
+
 def _con_ia(instrucciones: str, texto: str, esquema: type[Esquema]) -> tuple[Esquema | None, Fuente, str | None]:
     proveedor = proveedor_activo()
     if proveedor == "respaldo":
         return None, "respaldo", None
-    llamar = _llamar_claude if proveedor == "claude" else _llamar_gemini
-    datos, aviso = llamar(instrucciones, texto, esquema)
-    return datos, proveedor if datos is not None else "respaldo", aviso
+    texto = " ".join(texto.split())  # mismos textos con distintos espacios comparten caché
+    try:
+        datos = _ia_cacheada(proveedor, instrucciones, texto, esquema.__name__)
+    except _FalloIA as fallo:
+        return None, "respaldo", fallo.aviso
+    return esquema.model_validate(datos), proveedor, None
+
+
+def temas_de_texto(texto: str) -> list[TipoNecesidad]:
+    """Todas las necesidades que reconocen las palabras clave, no solo la primera."""
+    norm = normalizar(texto)
+    return [tipo for tipo, _, terminos in REGLAS_NECESIDAD if _coincidencias(norm, terminos)]
 
 
 TIPOS_REFORZADOS: set[TipoNecesidad] = {"cuidado_infantil", "personas_mayores", "movilidad"}
@@ -471,7 +508,7 @@ def estructurar_consulta(texto: str, distrito: Distrito | None = None) -> Result
     datos.riesgo = datos.riesgo or detectar_riesgo(texto)
     if distrito:
         datos.distrito = distrito
-    return Resultado(datos, fuente, aviso)
+    return Resultado(datos, fuente, aviso, temas_de_texto(texto))
 
 
 def estructurar_relato(texto: str) -> Resultado[RelatoEstructurado]:

@@ -60,6 +60,12 @@ VISTA_MAPA = {
     "Villa El Salvador": ((-12.2130, -76.9350), 13),
     "Ventanilla": ((-11.8700, -77.1350), 12),
 }
+# Recuadro aproximado de cada distrito (sur-oeste, nor-este), para que el mapa lo muestre completo.
+LIMITES_DISTRITO = {
+    "Villa El Salvador": ((-12.245, -76.965), (-12.185, -76.905)),
+    "Ventanilla": ((-11.905, -77.160), (-11.835, -77.100)),
+}
+ZOOM_MAXIMO = 14
 
 DIMENSIONES = {
     "economica": ("Económica", "¿Puede pagar el servicio y llegar hasta él?"),
@@ -175,6 +181,15 @@ NECESIDADES = {
     "movilidad": {"tipos": set(), "texto": []},
     "accesibilidad": {"tipos": set(), "texto": []},
 }
+# Desde esta pertinencia un recurso es alternativa directa; por debajo, solo complementaria.
+PERTINENCIA_DIRECTA = 2.0
+# Palabras como "hijo" o "cuidado" suelen nombrar a quién se cuida, no lo que se busca:
+# solo cuentan cuando son la necesidad principal.
+TEMAS_SOLO_PRINCIPALES = {"ninez", "apoyo_comunitario", "otro"}
+TIPOS_POR_POBLACION = {
+    "cuidado_infantil": {"cuidado_infantil"},
+    "personas_mayores": TIPOS_PERSONAS_MAYORES,
+}
 
 ESTILOS = """
 <style>
@@ -282,6 +297,42 @@ def es_relevante(recurso, consulta: ConsultaEstructurada) -> bool:
     return recurso["tipo"] in regla["tipos"] or any(t in texto for t in regla["texto"])
 
 
+def coincidencia(recurso, tipo_necesidad: str) -> float:
+    """3 si el tipo o el nombre del recurso responde a la necesidad; 2 si solo la descripción."""
+    regla = NECESIDADES.get(tipo_necesidad)
+    if regla is None:
+        return 0.0
+    nombre = normalizar(recurso["nombre"])
+    if recurso["tipo"] in regla["tipos"] or any(t in nombre for t in regla["texto"]):
+        return 3.0
+    descripcion = normalizar(recurso["descripcion"])
+    return 2.0 if any(t in descripcion for t in regla["texto"]) else 0.0
+
+
+def pertinencia(recurso, consulta: ConsultaEstructurada, temas: list[str]) -> float:
+    """Cuánto responde el recurso a lo que se pidió, sin mirar el semáforo.
+
+    Cuenta la necesidad principal y, a mitad de peso, otras necesidades específicas que las
+    palabras clave reconocen en el texto (por si la IA eligió una categoría demasiado general).
+    """
+    if consulta.tipo_necesidad in NECESIDADES:
+        total = coincidencia(recurso, consulta.tipo_necesidad)
+    else:
+        total = 2.0 if consulta.ambito != "sin_clasificar" and recurso["ambito"] == consulta.ambito else 0.0
+    for tema in dict.fromkeys(temas):
+        if tema != consulta.tipo_necesidad and tema not in TEMAS_SOLO_PRINCIPALES:
+            total += 0.5 * coincidencia(recurso, tema)
+    return total
+
+
+def es_de_otra_poblacion(recurso, consulta: ConsultaEstructurada) -> bool:
+    """Un servicio para personas mayores no es complemento de una guardería, ni al revés."""
+    return any(
+        recurso["tipo"] in tipos and necesidad != consulta.tipo_necesidad
+        for necesidad, tipos in TIPOS_POR_POBLACION.items()
+    )
+
+
 def puntaje(recurso, restricciones: dict[str, str]) -> float:
     total = 0.5 if recurso["estado_verificacion"] == "si" else 0.0
     for dimension in DIMENSIONES:
@@ -293,21 +344,40 @@ def puntaje(recurso, restricciones: dict[str, str]) -> float:
     return total
 
 
-def buscar_alternativas(recursos: pd.DataFrame, consulta: ConsultaEstructurada, distrito: str) -> list[dict]:
-    restricciones = consulta.restricciones.activas()
-    en_distrito = [r for r in recursos.to_dict("records") if disponible_en(r, distrito)]
-    en_distrito.sort(key=lambda r: (-puntaje(r, restricciones), r["distrito"] != distrito, r["id"]))
+def buscar_alternativas(
+    recursos: pd.DataFrame, consulta: ConsultaEstructurada, distrito: str, temas: list[str] | None = None
+) -> list[dict]:
+    """Ordena por pertinencia; luego reales antes que sintéticos; recién después, el semáforo.
 
-    directas = [{**r, "complementaria": False} for r in en_distrito if es_relevante(r, consulta)][:3]
+    Así, un recurso pertinente con datos "por verificar" no queda detrás de un ejemplo
+    sintético que tiene todas las dimensiones en "sí".
+    """
+    temas = temas or []
+    restricciones = consulta.restricciones.activas()
+    candidatos = []
+    for recurso in recursos.to_dict("records"):
+        if disponible_en(recurso, distrito):
+            candidatos.append({**recurso, "pertinencia": pertinencia(recurso, consulta, temas)})
+    candidatos.sort(key=lambda r: (
+        -r["pertinencia"],
+        r["estado_verificacion"] == "sintetico",
+        -puntaje(r, restricciones),
+        r["distrito"] != distrito,
+        r["id"],
+    ))
+
+    directas = [{**r, "complementaria": False} for r in candidatos if r["pertinencia"] >= PERTINENCIA_DIRECTA][:3]
     if not directas:
         return []
     ids = {r["id"] for r in directas}
-    mismo_ambito = [
+    # Complementarias: primero las algo pertinentes; después, otras del mismo ámbito y la misma población.
+    complementarias = [
         {**r, "complementaria": True}
-        for r in en_distrito
-        if r["id"] not in ids and r["ambito"] == consulta.ambito
+        for r in candidatos
+        if r["id"] not in ids
+        and (r["pertinencia"] > 0 or (r["ambito"] == consulta.ambito and not es_de_otra_poblacion(r, consulta)))
     ]
-    return directas + mismo_ambito[: 3 - len(directas)]
+    return directas + complementarias[: 3 - len(directas)]
 
 
 def tiene_lista_espera(recurso: dict) -> bool:
@@ -341,6 +411,7 @@ def sugerir_comunitaria(
         if r["distrito"] == distrito
         and es_comunitaria(r)
         and (es_relevante(r, consulta) or r["ambito"] == consulta.ambito)
+        and (es_relevante(r, consulta) or not es_de_otra_poblacion(r, consulta))
         and r["id"] not in usados
         and not tiene_lista_espera(r)
         and not any(r[d] == "no" for d in restricciones)
@@ -613,7 +684,7 @@ def pestana_asistente(recursos: pd.DataFrame) -> None:
         else:
             with st.spinner("Buscando alternativas..."):
                 resultado = estructurar_consulta(texto.strip(), distrito)
-            alternativas = buscar_alternativas(recursos, resultado.datos, distrito)
+            alternativas = buscar_alternativas(recursos, resultado.datos, distrito, resultado.temas)
             barreras = detectar_barreras(alternativas, resultado.datos)
             guardadas = registrar_barreras(barreras, resultado.datos, distrito)
             comunitaria = sugerir_comunitaria(recursos, resultado.datos, distrito, alternativas)
@@ -718,14 +789,23 @@ def guardar_relato(recursos: pd.DataFrame) -> None:
     if not guardado:
         st.session_state["voces_error"] = True
         return
-    for clave in ("voces_resultado", "voces_revision", "voces_consentimiento", "voces_texto"):
+    for clave in ("voces_resultado", "voces_revision", "voces_consentimiento", "voces_texto", "voces_metodo"):
         st.session_state.pop(clave, None)
     st.session_state["voces_guardado"] = True
 
 
-def base_mapa(filtro: str) -> folium.Map:
+def base_mapa(filtro: str, puntos: pd.DataFrame) -> folium.Map:
+    """Encuadra los puntos visibles y el distrito completo, sin acercarse más que ZOOM_MAXIMO."""
     centro, zoom = VISTA_MAPA[filtro]
-    return folium.Map(location=centro, zoom_start=zoom, tiles="OpenStreetMap", control_scale=True)
+    mapa = folium.Map(location=centro, zoom_start=zoom, tiles="OpenStreetMap", control_scale=True)
+    distritos = DISTRITOS if filtro == "Todos" else [filtro]
+    lats = [p[0] for d in distritos for p in LIMITES_DISTRITO[d]]
+    lons = [p[1] for d in distritos for p in LIMITES_DISTRITO[d]]
+    coordenadas = puntos[["lat", "lon"]].apply(pd.to_numeric, errors="coerce").dropna()
+    lats += coordenadas["lat"].tolist()
+    lons += coordenadas["lon"].tolist()
+    mapa.fit_bounds([(min(lats), min(lons)), (max(lats), max(lons))], padding=(16, 16), max_zoom=ZOOM_MAXIMO)
+    return mapa
 
 
 def punto(lat: float, lon: float, color: str, popup: str, titulo: str) -> folium.CircleMarker:
@@ -747,7 +827,7 @@ def nombre_capa(etiqueta: str, color: str, cantidad: int) -> str:
 
 
 def mapa_relatos(relatos: pd.DataFrame, filtro: str) -> folium.Map:
-    mapa = base_mapa(filtro)
+    mapa = base_mapa(filtro, relatos)
     for capa, (etiqueta, color) in CAPAS.items():
         filas = relatos[relatos["capa"] == capa]
         grupo = folium.FeatureGroup(name=nombre_capa(etiqueta, color, len(filas)))
@@ -777,17 +857,30 @@ def pestana_voces(recursos: pd.DataFrame) -> None:
     if st.session_state.pop("voces_error", False):
         st.error("No pudimos guardar el relato. Inténtalo de nuevo.")
 
-    if transcripcion.disponible():
-        audio = st.file_uploader("Sube un audio", type=["mp3", "wav", "m4a", "ogg"])
-        if audio and st.button("Transcribir audio"):
-            with st.spinner("Transcribiendo en esta computadora..."):
-                extension = Path(audio.name).suffix or ".wav"
-                try:
-                    st.session_state["voces_texto"] = transcripcion.transcribir(audio.getvalue(), extension)
-                except Exception:  # librería incompleta, audio dañado o modelo sin descargar
-                    st.warning("No se pudo transcribir este audio. Puedes pegar aquí el texto del relato.")
+    metodo = transcripcion.metodo_disponible()
+    if metodo == "manual":
+        st.info("La transcripción de audio no está disponible en este equipo. Puedes pegar aquí el texto del relato.")
     else:
-        st.info("La transcripción de audio no está instalada en este equipo. Puedes pegar aquí el texto del relato.")
+        st.caption(f"🎙️ El audio se transcribe con {transcripcion.NOMBRES_METODO[metodo]}.")
+        if metodo == "gemini":
+            st.caption("En esta versión de demostración, graba solo relatos de ejemplo, sin datos reales.")
+        grabacion = st.audio_input("Graba tu relato con el micrófono", key="voces_grabacion")
+        archivo = st.file_uploader("O sube un audio", type=["mp3", "wav", "m4a", "ogg", "flac"], key="voces_archivo")
+        audio = grabacion or archivo
+        if audio and st.button("Transcribir audio"):
+            with st.spinner("Transcribiendo el audio..."):
+                try:
+                    texto_audio, usado = transcripcion.transcribir(audio.getvalue(), audio.name or "grabacion.wav")
+                except RuntimeError as error:
+                    st.warning(f"{error} Puedes pegar aquí el texto del relato.")
+                else:
+                    if texto_audio:
+                        st.session_state["voces_texto"] = texto_audio
+                        st.session_state["voces_metodo"] = usado
+                    else:
+                        st.warning("No se entendió el audio. Prueba grabar de nuevo o pega el texto.")
+        if st.session_state.get("voces_metodo"):
+            st.caption(f"Transcrito con {transcripcion.NOMBRES_METODO[st.session_state['voces_metodo']]}. Revisa el texto.")
 
     texto = st.text_area("Texto del relato", key="voces_texto", height=130)
     distrito = st.selectbox("Distrito del relato", DISTRITOS, key="voces_distrito")
@@ -869,7 +962,7 @@ def mostrar_grafico(titulo: str, datos: pd.DataFrame, columna: str, etiquetas: d
 
 
 def mapa_recursos(recursos: pd.DataFrame, filtro: str) -> folium.Map:
-    mapa = base_mapa(filtro)
+    mapa = base_mapa(filtro, recursos)
     for ambito in sorted(recursos["ambito"].unique()):
         filas = recursos[recursos["ambito"] == ambito]
         etiqueta = ETIQUETAS_AMBITO.get(ambito, ambito)
@@ -976,4 +1069,5 @@ def main() -> None:
         pestana_observatorio(recursos)
 
 
-main()
+if __name__ == "__main__":
+    main()

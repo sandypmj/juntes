@@ -8,5 +8,9 @@ google-genai
 python-dotenv
 pydantic
 
-# Opcional: transcripción local de audio. Si no se instala, la pestaña Voces permite pegar el texto.
+# Opcional: transcripción local de audio con Whisper (modelo "base"). Va comentado para que la
+# versión publicada en Streamlit Cloud no se haga pesada: allí el audio se transcribe con Gemini.
+# Para usarlo en tu computadora, quita el # de estas dos líneas e instala de nuevo.
+# av 19 no es compatible con faster-whisper 1.2 (falla al leer el audio).
 # faster-whisper
+# av<19

@@ -45,9 +45,10 @@ Ambito = Literal[
     "memoria",
     "sin_clasificar",
 ]
-Capa = Literal["miedo", "cuidado", "cultura", "memoria", "verde", "accesibilidad"]
+Capa = Literal["miedo", "seguridad", "cuidado", "cultura", "memoria", "verde", "accesibilidad"]
 TipoNecesidad = Literal[
     "violencia",
+    "orientacion_legal",
     "salud",
     "alimentacion",
     "cuidado_infantil",
@@ -65,6 +66,7 @@ Distrito = Literal["Villa El Salvador", "Ventanilla"]
 
 ETIQUETAS_NECESIDAD = {
     "violencia": "Orientación o protección frente a la violencia",
+    "orientacion_legal": "Orientación legal y defensa de derechos",
     "salud": "Atención de salud",
     "alimentacion": "Alimentación",
     "cuidado_infantil": "Cuidado de niñas y niños pequeños",
@@ -145,6 +147,12 @@ mayor, tercera edad, abuelos o abuelitas, CIAM, comedor para personas mayores, o
 personas adultas mayores, cuidado de personas mayores o con dependencia por la edad.
 - alimentacion: comedor, olla común, comida o almuerzo, cuando no se trata de personas mayores.
 - ninez: protección o derechos de niñas, niños y adolescentes (DEMUNA, INABIF), no el cuidado diario.
+- orientacion_legal (ámbito derechos_proteccion): orientación o asesoría legal, abogada, \
+defensoría, conocer o defender derechos, pensión de alimentos, cuando no hay violencia.
+- cultura_educacion: talleres, arte, teatro, música, bibliotecas, deporte o estudios, también \
+cuando son para hijas o hijos.
+- movilidad (ámbito movilidad_seguridad): paraderos, transporte, combis, caminos, calles oscuras, \
+iluminación o alumbrado, o sentirse segura en la calle o en el trayecto.
 Si hay violencia, usa violencia aunque se trate de niñas, niños o personas mayores."""
 
 INSTRUCCIONES_RELATO = """Estructuras relatos sobre la vida en barrios populares para un mapa \
@@ -182,6 +190,10 @@ REGLAS_NECESIDAD: list[tuple[TipoNecesidad, Ambito, list[str]]] = [
         "violencia", "golpe", "me pega", "maltrat", "denunci", "acoso", "abuso", "amenaz",
         "feminicid", "violacion",
     ]),
+    ("orientacion_legal", "derechos_proteccion", [
+        "legal", "abogad", "asesoria", "juridic", "defensoria", "mis derechos", "nuestros derechos",
+        "pension de alimentos", "demanda", "orientacion legal",
+    ]),
     ("cuidado_infantil", "redes_cuidados", [
         # "cuna" sola coincidiría con "cuñado" y "bebe" con "beber": se usan frases.
         "guarderia", "wawa", "cuna mas", "cunamas", "una cuna", "la cuna", "nido", "cuidado infantil",
@@ -202,14 +214,22 @@ REGLAS_NECESIDAD: list[tuple[TipoNecesidad, Ambito, list[str]]] = [
     ]),
     ("alimentacion", "redes_cuidados", ["comida", "aliment", "almuerzo", "olla", "comedor", "hambre", "menu"]),
     ("memoria", "memoria", ["memoria", "moyano", "historia del barrio", "fepomuves"]),
-    ("ninez", "derechos_proteccion", ["nina", "nino", "hijo", "hija", "adolescente", "demuna", "inabif", "menor de edad"]),
     ("tramites", "derechos_proteccion", ["tramite", "municipalidad", "licencia", "partida de"]),
+    # Antes que ninez: "taller de arte para mi hijo" es cultura, no protección.
     ("cultura_educacion", "cultura_recreacion", [
         "cultura", "taller", "biblioteca", "parque", "recreac", "deporte", "estudiar",
         "universidad", "humedal", "teatro", "musica", "danza", "libro", "lectura", "arte",
         "pintura", "cine", "curso",
     ]),
-    ("movilidad", "movilidad_seguridad", ["transporte", "paradero", "movilidad", "camino", "calle oscura", "alumbrado", "combi"]),
+    # "bus" sola coincidiría con "busco" y "micro" con "microempresa": se usan frases.
+    ("movilidad", "movilidad_seguridad", [
+        "transporte", "paradero", "movilidad", "camin", "calle oscura", "calles oscuras",
+        "cruzar la calle", "calle sola", "alumbrado", "iluminac",
+        "sin luz", "poca luz", "oscur", "combi", "mototaxi", "el bus", "un bus", "buses",
+        "la micro", "el micro", "trayecto", "pista", "vereda", "insegur", "segura en", "seguro en",
+        "asalt", "robo",
+    ]),
+    ("ninez", "derechos_proteccion", ["nina", "nino", "hijo", "hija", "adolescente", "demuna", "inabif", "menor de edad"]),
     ("accesibilidad", "accesibilidad_inclusion", ["rampa", "accesib", "silla de ruedas", "lengua de senas"]),
     ("apoyo_comunitario", "redes_cuidados", ["apoyo", "organizacion", "vecina", "cuidado", "cuidar", "voluntari", "red de"]),
 ]
@@ -258,6 +278,7 @@ def _consulta_respaldo(texto: str) -> ConsultaEstructurada:
 TERMINOS_CAPA: dict[Capa, list[str]] = {
     "memoria": ["memoria", "recuerd", "historia", "fundador", "moyano", "fepomuves", "lideresa"],
     "miedo": ["miedo", "insegur", "oscur", "asalt", "acoso", "robo", "peligro"],
+    "seguridad": ["me siento segura", "me siento seguro", "tranquil", "iluminad", "hay luz", "vigilan", "serenazgo"],
     "cuidado": ["olla", "comedor", "cuid", "vaso de leche", "apoy", "vecina"],
     "accesibilidad": ["rampa", "silla de ruedas", "vereda", "escalera", "accesib"],
     "verde": ["parque", "arbol", "humedal", "verde", "jardin", "aves"],
@@ -266,6 +287,7 @@ TERMINOS_CAPA: dict[Capa, list[str]] = {
 AMBITO_POR_CAPA: dict[Capa, Ambito] = {
     "memoria": "memoria",
     "miedo": "movilidad_seguridad",
+    "seguridad": "movilidad_seguridad",
     "cuidado": "redes_cuidados",
     "accesibilidad": "accesibilidad_inclusion",
     "verde": "cultura_recreacion",
@@ -426,15 +448,15 @@ def _con_ia(instrucciones: str, texto: str, esquema: type[Esquema]) -> tuple[Esq
     return datos, proveedor if datos is not None else "respaldo", aviso
 
 
-TIPOS_CUIDADO: set[TipoNecesidad] = {"cuidado_infantil", "personas_mayores"}
+TIPOS_REFORZADOS: set[TipoNecesidad] = {"cuidado_infantil", "personas_mayores", "movilidad"}
 
 
 def _reforzar_cuidados(datos: ConsultaEstructurada, texto: str) -> None:
-    """Si la IA dejó una consulta de cuidados como genérica, las palabras clave deciden."""
+    """Si la IA dejó como genérica una consulta de cuidados o movilidad, las palabras clave deciden."""
     if datos.tipo_necesidad not in ("otro", "apoyo_comunitario"):
         return
     respaldo = _consulta_respaldo(texto)
-    if respaldo.tipo_necesidad in TIPOS_CUIDADO:
+    if respaldo.tipo_necesidad in TIPOS_REFORZADOS:
         datos.tipo_necesidad = respaldo.tipo_necesidad
         datos.ambito = respaldo.ambito
         datos.necesidad = respaldo.necesidad

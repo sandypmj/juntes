@@ -35,11 +35,17 @@
 
 > "Usé las palabras biblioteca, talleres y teatro; todas tuvieron alternativas bajo el distrito requerido."
 
+Después envió dos comentarios más:
+
+> "También usé la palabra paraderos seguros, pero no hubo opciones."
+
+> "No sentí confusión al usar la herramienta como tal, sino que todo era muy plano (eso es un tema de diagramación); las imágenes ayudan más a socializar la información."
+
 ## Hallazgos
 
 **Lo que funcionó**
 
-- **Comprensión del propósito.** Las dos usuarias entendieron para qué sirve la app sin explicación previa: encontrar servicios del propio distrito y sentirse "seguros e informados".
+- **Comprensión del propósito.** Las dos usuarias entendieron para qué sirve la app sin explicación previa: encontrar servicios del propio distrito y sentirse "seguros e informados". La segunda dijo que no sintió confusión al usarla.
 - **Búsquedas culturales con resultados.** Biblioteca, talleres y teatro devolvieron alternativas en el distrito elegido.
 
 **Lo que faltó**
@@ -48,6 +54,8 @@
 - **Cuidados para personas adultas mayores.** "Cuidado de ancianos" no llevó al CIAM, a los comedores ni a las organizaciones de personas adultas mayores. En Villa El Salvador el CIAM es un servicio representativo.
 - **Programas nacionales con presencia en Lima.** Faltaba el INABIF.
 - **Datos de contacto.** Las alternativas no mostraban dirección, teléfono, redes sociales ni cómo llegar.
+- **Movilidad y seguridad.** "Paraderos seguros" no dio opciones. No hay un servicio que garantice un paradero seguro, pero la app tampoco mostraba lo que sí tiene: los relatos de las vecinas, los contactos de emergencia y la posibilidad de contar la propia experiencia.
+- **Diseño plano.** La información se entendía, pero todo se veía igual. Las imágenes ayudan a socializar la información.
 
 **A quién le sirve**
 
@@ -65,6 +73,21 @@ Implementado el mismo día, 10 de noviembre de 2026:
 4. **En el asistente:**
    - Cada alternativa muestra dirección, teléfono (con enlace para llamar) y web o redes cuando existen, y un botón "Cómo llegar" que abre Google Maps. Si la ubicación no está verificada, la app avisa que es aproximada.
    - Cuando no hay un recurso adecuado, la app lo dice ("Todavía no tenemos este servicio en el directorio") y lo registra en el Observatorio como barrera sin recurso.
+
+Implementado después de los dos comentarios adicionales:
+
+5. **Movilidad y seguridad.** Las consultas sobre paraderos, transporte, caminos, iluminación o sentirse segura en la calle ahora muestran:
+   - "Lo que cuentan las vecinas": los relatos de la pestaña Voces del distrito en las capas miedo y seguridad.
+   - Contactos útiles: 105, Línea 100 y el serenazgo o la central de emergencias municipal (por verificar).
+   - Una invitación a contar la propia experiencia en Voces.
+
+   Cada una de estas búsquedas queda registrada en el Observatorio como barrera de movilidad y seguridad. Sumamos la capa "seguridad" al mapa de Voces y dos relatos sintéticos sobre paraderos: uno inseguro por falta de luz y otro seguro por la presencia de comercio.
+6. **Diseño más visual, sin fotos reales:**
+   - Un ícono por ámbito: 🛡️ derechos y protección, 🚌 movilidad y seguridad, ♿ accesibilidad e inclusión, 🎭 cultura y recreación, 🤝 redes y cuidados, 🕯️ memoria.
+   - Cada alternativa es una tarjeta con fondo suave y borde del color de su ámbito.
+   - El semáforo de las siete dimensiones ahora tiene círculos de color, con símbolo (✓, ½, ✕, ?) y nombre corto. El símbolo permite leerlo sin distinguir colores.
+   - Cuatro botones de ejemplo de búsqueda llenan el cuadro de texto.
+   - Los colores mantienen buen contraste con el texto.
 
 ## Próximos pasos
 

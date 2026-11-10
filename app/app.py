@@ -71,11 +71,22 @@ DIMENSIONES = {
     "cultural": ("Pertinencia cultural", "¿La atención considera idioma, contexto y particularidades culturales?"),
 }
 ETIQUETAS_DIMENSION = {k: v[0] for k, v in DIMENSIONES.items()}
+# Nombre corto para el semáforo; el nombre completo y la pregunta van en el texto de ayuda.
+NOMBRE_CORTO = {
+    "economica": "Económica",
+    "fisica": "Física",
+    "comunicacional": "Comunicación",
+    "institucional": "Trámites",
+    "seguridad": "Seguridad",
+    "territorial": "Cercanía",
+    "cultural": "Cultura",
+}
+# Cada estado lleva símbolo además de color, para quien no distingue colores.
 SEMAFORO = {
-    "si": ("🟢", "Sí", "chip-si"),
-    "parcial": ("🟡", "Parcial", "chip-parcial"),
-    "no": ("🔴", "No", "chip-no"),
-    "por_verificar": ("⚪", "Por verificar", "chip-verificar"),
+    "si": ("✓", "Sí", "circulo-si"),
+    "parcial": ("½", "Parcial", "circulo-parcial"),
+    "no": ("✕", "No", "circulo-no"),
+    "por_verificar": ("?", "Por verificar", "circulo-verificar"),
 }
 PESOS = {"si": 2.0, "parcial": 1.0, "por_verificar": 0.5, "no": 0.0}
 
@@ -96,8 +107,26 @@ COLOR_AMBITO = {
     "redes_cuidados": "#D1603D",
     "memoria": "#8A5A12",
 }
+ICONOS_AMBITO = {
+    "derechos_proteccion": "🛡️",
+    "movilidad_seguridad": "🚌",
+    "accesibilidad_inclusion": "♿",
+    "cultura_recreacion": "🎭",
+    "redes_cuidados": "🤝",
+    "memoria": "🕯️",
+}
+# Fondos suaves para las tarjetas: el texto oscuro del tema (#3B2A20) mantiene contraste alto.
+FONDO_AMBITO = {
+    "derechos_proteccion": "#F4EDF8",
+    "movilidad_seguridad": "#EBF2FA",
+    "accesibilidad_inclusion": "#E7F6F7",
+    "cultura_recreacion": "#EAF6EE",
+    "redes_cuidados": "#FCEEE8",
+    "memoria": "#F7EFE2",
+}
 CAPAS = {
     "miedo": ("Miedo", "#7B3FA0"),
+    "seguridad": ("Seguridad", "#C2185B"),
     "cuidado": ("Cuidado", "#D1603D"),
     "cultura": ("Cultura", "#2F6DB5"),
     "memoria": ("Memoria", "#8A5A12"),
@@ -117,11 +146,23 @@ TIPOS_PERSONAS_MAYORES = {"adulto_mayor", "comedor_adulto_mayor", "organizacion_
 ALCANCE_LIMA = "Lima"
 SIN_DATO = {"", "por verificar", "dato sintetico", "no aplica (atencion telefonica)"}
 TERMINOS_ESPERA = ["lista de espera", "listas de espera", "en espera", "sin cupos", "cupos limitados"]
+EJEMPLOS_BUSQUEDA = [
+    ("🎨", "Taller de arte para mi hijo"),
+    ("🤝", "Cuidado para mi mamá adulta mayor"),
+    ("🚌", "Paradero seguro de noche"),
+    ("⚖️", "Orientación legal gratuita"),
+]
+CAPAS_SEGURIDAD = {"miedo", "seguridad"}
+SERENAZGO = {
+    "Villa El Salvador": "Serenazgo de Villa El Salvador: (01) 510-0200",
+    "Ventanilla": "Central de emergencias Alerta Ventanilla: (01) 904-0388",
+}
 
 # Qué recursos responden a cada tipo de necesidad: por tipo de recurso o por texto.
 # "movilidad" y "accesibilidad" no tienen recursos propios todavía.
 NECESIDADES = {
     "violencia": {"tipos": {"organizacion_mujeres"}, "texto": ["violencia"]},
+    "orientacion_legal": {"tipos": set(), "texto": ["legal", "orientacion", "defensoria"]},
     "salud": {"tipos": {"salud"}, "texto": []},
     "alimentacion": {"tipos": {"olla_comun", "comedor_adulto_mayor"}, "texto": []},
     "cuidado_infantil": {"tipos": {"cuidado_infantil"}, "texto": []},
@@ -141,18 +182,40 @@ ESTILOS = """
   .bloque-inicio { background: #F6E9DA; border-radius: 16px; padding: 1.1rem 1.4rem; margin-bottom: .8rem; }
   .bloque-inicio h1 { margin: 0; padding: 0; font-size: 2rem; }
   .bloque-inicio p { margin: .3rem 0 0; }
-  .semaforo { display: flex; flex-wrap: wrap; gap: .35rem; margin: .4rem 0 .7rem; }
-  .chip { border-radius: 999px; padding: .15rem .6rem; font-size: .82rem; font-weight: 600; }
-  .chip-si { background: #2A6F48; color: #fff; }
-  .chip-parcial { background: #F2C14E; color: #3B2A20; }
-  .chip-no { background: #B3261E; color: #fff; }
-  .chip-verificar { background: #6F6A64; color: #fff; }
+  .semaforo { display: flex; flex-wrap: wrap; gap: .5rem .3rem; margin: .5rem 0 .3rem; padding: 0; list-style: none; }
+  .dimension { display: flex; flex-direction: column; align-items: center; width: 5.4rem;
+               text-align: center; font-size: .78rem; font-weight: 600; line-height: 1.15; }
+  .circulo { width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center;
+             justify-content: center; font-size: 1.15rem; font-weight: 800; margin-bottom: .3rem;
+             border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(59, 42, 32, .3); }
+  .circulo-si { background: #2A6F48; color: #fff; }
+  .circulo-parcial { background: #F2C14E; color: #3B2A20; }
+  .circulo-no { background: #B3261E; color: #fff; }
+  .circulo-verificar { background: #6F6A64; color: #fff; }
+  .leyenda { font-size: .8rem; color: #5A4636; margin: 0 0 .6rem; }
+  .icono-ambito { font-size: 1.5rem; margin-right: .35rem; }
+  .relato-vecina { background: #fff; border-radius: 12px; padding: .7rem 1rem; margin: .45rem 0;
+                   border-left: 5px solid #7B3FA0; }
+  .relato-vecina.seguro { border-left-color: #C2185B; }
+  .relato-vecina p { margin: .2rem 0; }
+  .contactos-utiles { background: #FFFFFF; border: 1px solid #E3CDB8; border-radius: 12px; padding: .8rem 1.1rem; }
+  .contactos-utiles a { color: #7A3322; font-weight: 700; }
   .ayuda-urgente { background: #B3261E; color: #fff; border-radius: 14px; padding: 1rem 1.3rem; margin-bottom: 1rem; }
   .ayuda-urgente a { color: #fff; font-weight: 700; }
   .ayuda-urgente p { margin: .25rem 0; font-size: 1.05rem; }
   .sintetico { background: #3B2A20; color: #fff; border-radius: 6px; padding: .05rem .4rem; font-size: .75rem; }
 </style>
 """
+
+
+def estilos_tarjetas() -> str:
+    """Fondo suave y borde izquierdo del color de cada ámbito en las tarjetas del asistente."""
+    reglas = [
+        f'div[class*="st-key-tarjeta-{ambito.replace("_", "-")}-"] {{ background: {FONDO_AMBITO[ambito]}; '
+        f"border-left: 6px solid {COLOR_AMBITO[ambito]} !important; border-radius: 14px; }}"
+        for ambito in FONDO_AMBITO
+    ]
+    return "<style>\n" + "\n".join(reglas) + "\n</style>"
 
 
 @st.cache_data
@@ -294,12 +357,17 @@ def sugerir_comunitaria(
     return {**opciones[0], "complementaria": False}
 
 
+def es_movilidad(consulta: ConsultaEstructurada) -> bool:
+    return consulta.tipo_necesidad == "movilidad" or consulta.ambito == "movilidad_seguridad"
+
+
 def detectar_barreras(alternativas: list[dict], consulta: ConsultaEstructurada) -> list[tuple[str, str]]:
     """Devuelve (dimensión, motivo) por cada necesidad que quedó sin solución."""
     restricciones = list(consulta.restricciones.activas())
     alternativas = [a for a in alternativas if not a["complementaria"]]
     if not alternativas:
-        return [(d, "sin_recurso") for d in (restricciones or ["territorial"])]
+        por_defecto = "seguridad" if es_movilidad(consulta) else "territorial"
+        return [(d, "sin_recurso") for d in (restricciones or [por_defecto])]
 
     barreras = []
     for dimension in restricciones:
@@ -321,7 +389,7 @@ def registrar_barreras(barreras: list[tuple[str, str]], consulta: ConsultaEstruc
         agregar_fila(RUTA_BARRERAS, COLUMNAS_BARRERAS, {
             "fecha_mes": mes_actual(),
             "distrito": distrito,
-            "ambito": consulta.ambito,
+            "ambito": "movilidad_seguridad" if es_movilidad(consulta) else consulta.ambito,
             "dimension": dimension,
             "tipo_necesidad": consulta.tipo_necesidad,
             "motivo": motivo,
@@ -353,14 +421,17 @@ def mostrar_fuente(resultado: Resultado) -> None:
 
 
 def html_semaforo(recurso: dict) -> str:
-    chips = []
-    for dimension, etiqueta in ETIQUETAS_DIMENSION.items():
-        icono, texto, clase = SEMAFORO.get(recurso[dimension], SEMAFORO["por_verificar"])
-        chips.append(
-            f'<span class="chip {clase}" title="{html.escape(DIMENSIONES[dimension][1])}">'
-            f"{icono} {html.escape(etiqueta)}: {texto}</span>"
+    items = []
+    for dimension, (etiqueta, pregunta) in DIMENSIONES.items():
+        simbolo, texto, clase = SEMAFORO.get(recurso[dimension], SEMAFORO["por_verificar"])
+        descripcion = html.escape(f"{etiqueta}: {texto}. {pregunta}")
+        items.append(
+            f'<li class="dimension" title="{descripcion}" aria-label="{descripcion}">'
+            f'<span class="circulo {clase}" aria-hidden="true">{simbolo}</span>'
+            f"{html.escape(NOMBRE_CORTO[dimension])}</li>"
         )
-    return f'<div class="semaforo">{"".join(chips)}</div>'
+    leyenda = " · ".join(f"{s} {t}" for s, t, _ in SEMAFORO.values())
+    return f'<ul class="semaforo">{"".join(items)}</ul><p class="leyenda">{leyenda}</p>'
 
 
 def detalle_dimension(dimension: str, recurso: dict) -> str:
@@ -442,9 +513,15 @@ def mostrar_contacto(recurso: dict) -> None:
 
 
 def mostrar_alternativa(titulo: str, recurso: dict, restricciones: dict[str, str]) -> None:
-    with st.container(border=True):
-        st.subheader(titulo)
-        st.caption(f"{zona(recurso)} · {ETIQUETAS_AMBITO.get(recurso['ambito'], recurso['ambito'])}")
+    ambito = recurso["ambito"]
+    clave = f"tarjeta-{ambito.replace('_', '-')}-{recurso['id']}"
+    with st.container(border=True, key=clave):
+        icono = ICONOS_AMBITO.get(ambito, "📍")
+        st.markdown(
+            f'<h3><span class="icono-ambito" aria-hidden="true">{icono}</span>{html.escape(titulo)}</h3>',
+            unsafe_allow_html=True,
+        )
+        st.caption(f"{icono} {ETIQUETAS_AMBITO.get(ambito, ambito)} · {zona(recurso)}")
         if recurso["complementaria"]:
             st.info("Alternativa complementaria: es del mismo ámbito, pero puede no resolver lo que necesitas.")
         st.write(recurso["descripcion"])
@@ -458,12 +535,71 @@ def mostrar_alternativa(titulo: str, recurso: dict, restricciones: dict[str, str
         aviso_verificacion(recurso)
 
 
+def relatos_de_seguridad(distrito: str) -> pd.DataFrame:
+    relatos = leer_datos(EJEMPLO_RELATOS, RUTA_RELATOS, COLUMNAS_RELATOS)
+    return relatos[
+        (relatos["distrito"] == distrito)
+        & (relatos["capa"].isin(CAPAS_SEGURIDAD) | (relatos["ambito"] == "movilidad_seguridad"))
+    ]
+
+
+def mostrar_movilidad(distrito: str) -> None:
+    """Para paraderos, transporte y calles: voces del barrio, contactos útiles e invitación a contar."""
+    st.markdown(
+        f'<h3><span class="icono-ambito" aria-hidden="true">🚌</span>Moverte con seguridad en {html.escape(distrito)}</h3>',
+        unsafe_allow_html=True,
+    )
+    st.write(
+        "Todavía no tenemos un servicio que garantice un paradero o un camino seguro. "
+        "Esto es lo que sabemos por ahora."
+    )
+
+    st.markdown("**Lo que cuentan las vecinas**")
+    relatos = relatos_de_seguridad(distrito)
+    if relatos.empty:
+        st.caption("Aún no hay relatos sobre seguridad en este distrito.")
+    for _, relato in relatos.iterrows():
+        seguro = relato["capa"] == "seguridad"
+        icono, etiqueta = ("💡", "Se siente seguro") if seguro else ("🌙", "Da miedo")
+        marca = ' <span class="sintetico">EJEMPLO SINTÉTICO</span>' if relato["origen"] == "sintetico" else ""
+        lugar = html.escape(relato["lugares"] or relato["ubicacion"])
+        st.markdown(
+            f'<div class="relato-vecina{" seguro" if seguro else ""}">'
+            f"<p><strong>{icono} {etiqueta} · {lugar}</strong>{marca}</p>"
+            f"<p>{html.escape(relato['texto'][:400])}</p></div>",
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("**Contactos útiles**")
+    st.markdown(
+        f"""<div class="contactos-utiles">
+        <p>🚓 <a href="tel:105">105</a>: Policía Nacional, si estás en peligro ahora.</p>
+        <p>💜 <a href="tel:100">Línea 100</a>: gratuita, las 24 horas, frente al acoso y la violencia.</p>
+        <p>🦺 {html.escape(SERENAZGO[distrito])} (dato de gob.pe, por verificar).</p>
+        </div>""",
+        unsafe_allow_html=True,
+    )
+    st.info(
+        "¿Conoces un paradero o una calle que da miedo, o uno donde te sientes segura? "
+        "Cuéntalo en la pestaña **Voces**: cada relato mejora el mapa del barrio.",
+        icon="🗣️",
+    )
+
+
+def usar_ejemplo(texto: str) -> None:
+    st.session_state["asistente_texto"] = texto
+
+
 def pestana_asistente(recursos: pd.DataFrame) -> None:
     st.header("Cuéntanos qué necesitas")
     st.write("Buscamos alternativas en tu distrito y te mostramos qué tan accesible es cada una.")
+    st.caption("Prueba con un ejemplo:")
+    for columna, (icono, ejemplo) in zip(st.columns(len(EJEMPLOS_BUSQUEDA)), EJEMPLOS_BUSQUEDA):
+        columna.button(f"{icono} {ejemplo}", on_click=usar_ejemplo, args=(ejemplo,), width="stretch")
     with st.form("form_asistente"):
         texto = st.text_area(
             "¿Qué necesitas?",
+            key="asistente_texto",
             placeholder="Ejemplo: necesito un lugar para almorzar barato y uso silla de ruedas",
             help="No escribas tu nombre, DNI, teléfono ni dirección.",
         )
@@ -510,12 +646,14 @@ def pestana_asistente(recursos: pd.DataFrame) -> None:
             )
             st.markdown(f"**También puedes buscar apoyo comunitario.** {motivo}")
             mostrar_alternativa(f"Alternativa comunitaria: {comunitaria['nombre']}", comunitaria, restricciones)
-    else:
+    elif not es_movilidad(consulta):
         st.info(
             f"Todavía no tenemos este servicio en el directorio de {distrito}. "
             "No queremos mostrarte algo que no responde a lo que buscas: registramos este vacío "
             "para que el Observatorio lo haga visible."
         )
+    if es_movilidad(consulta):
+        mostrar_movilidad(distrito)
 
     if barreras and guardadas:
         st.success("Registramos esta barrera de forma anónima para el Observatorio. No guardamos lo que escribiste.")
@@ -813,7 +951,7 @@ def pestana_observatorio(recursos: pd.DataFrame) -> None:
 
 def main() -> None:
     st.set_page_config(page_title=NOMBRE_APP, page_icon="🤝", layout="wide")
-    st.markdown(ESTILOS, unsafe_allow_html=True)
+    st.markdown(ESTILOS + estilos_tarjetas(), unsafe_allow_html=True)
     st.markdown(
         f"""<div class="bloque-inicio"><h1>{NOMBRE_APP}</h1>
         <p>Tecnología para ciudades más justas, accesibles y cuidadoras.</p></div>""",

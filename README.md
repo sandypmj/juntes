@@ -63,7 +63,7 @@ Conectamos a vecinas, jóvenes y personas mayores con rutas reales de acceso a d
 **Qué construí.** Una plataforma con dos puertas de entrada y una base territorial común:
 
 - **Asistente de rutas:** la persona cuenta su necesidad y recibe dos o tres alternativas viables, con un semáforo de siete dimensiones de accesibilidad y la explicación de cada barrera.
-- **Voces que conectan y construyen:** relatos de voz sobre el barrio (miedo, cuidado, cultura, memoria, verde, accesibilidad) que se transcriben en local y se convierten en un mapa con capas y en una ruta sonora con la historia de las mujeres del barrio.
+- **Voces que conectan y construyen:** relatos escritos o grabados sobre el barrio, en las capas miedo, seguridad, cuidado, cultura, memoria, verde y accesibilidad, que se convierten en un mapa con capas. Próximo paso: una ruta sonora con la historia de las mujeres del barrio.
 - **Observatorio de barreras:** junta lo que no tuvo solución y lo convierte en evidencia por zona, ámbito y dimensión.
 
 **Las siete dimensiones de accesibilidad**
@@ -140,7 +140,7 @@ flowchart TD
 - **LLM con salidas estructuradas:** clasifica relatos y consultas en ámbito, dimensión, lugar y barrera con un esquema fijo, para poder agregarlos. Cuando hay clave de API, el texto de consultas y relatos se envía al proveedor de IA configurado (hoy Google Gemini); sin clave, la app usa un respaldo por palabras clave y ese texto no sale de la computadora. Las respuestas se guardan en caché en la memoria del servidor por 7 días, así una consulta o un relato repetido no gasta cuota de nuevo.
 - **Orden de las alternativas:** primero la pertinencia (que el recurso responda a la necesidad), después los recursos reales antes que los ejemplos sintéticos, y recién después el semáforo. Un dato "por verificar" no hunde a un recurso pertinente.
 - **Folium:** mapa con capas, liviano y sin costo.
-- **Texto a voz (opcional):** ruta sonora con voz sintética cuando la persona prefiere no ser reconocida.
+- **Texto a voz (próximo paso, aún no implementado):** una ruta sonora con voz sintética, para quien prefiera no ser reconocida.
 
 ## 7. Modelo de negocio
 
@@ -148,8 +148,8 @@ Gratis para la comunidad. Pagan quienes obtienen valor institucional. La coopera
 
 | Plan | Para quién | Qué recibe | Precio (hipótesis) |
 | --- | --- | --- | --- |
-| Comunidad | Personas, ollas comunes, colectivos | Asistente, mapa, relatos, rutas sonoras | Gratis |
-| Organizaciones | ONG, colegios, centros culturales, universidades | Panel de su territorio, reportes, ruta sonora a medida | S/ 100 al mes o S/ 1,500 por ruta |
+| Comunidad | Personas, ollas comunes, colectivos | Asistente, mapa, relatos y, como próximo paso, rutas sonoras | Gratis |
+| Organizaciones | ONG, colegios, centros culturales, universidades | Panel de su territorio, reportes y, como próximo paso, ruta sonora a medida | S/ 100 al mes o S/ 1,500 por ruta |
 | Institucional | Consultoras, empresas, inmobiliarias, municipalidades | Diagnóstico participativo con enfoque de género, observatorio, informe anexable | Desde S/ 12,000 por proyecto |
 
 **Fuentes de ingreso, de mayor a menor peso:** consultoras y empresas (líneas base sociales y participación ciudadana) · organizaciones · pilotos municipales · cooperación y fondos concursables como complemento (máximo un tercio del ingreso).
@@ -181,7 +181,7 @@ El rango depende de cuántos tokens de razonamiento use el modelo, que se cobran
 | LLM con salidas estructuradas | 08 | `ai/estructurar.py` |
 | Mapas con Folium | 06 | `app/app.py` (pestañas Voces y Observatorio) |
 | Dashboard | 05 | `app/app.py` (pestaña Observatorio) |
-| Texto a voz (opcional) | 15 | Aún no implementado |
+| Texto a voz (opcional) | 15 | Próximo paso: ruta sonora con voz sintética (aún no implementado) |
 
 ## 9. Qué hizo el agente
 
@@ -225,7 +225,7 @@ Construí Juntes entre el 9 y el 10 de noviembre de 2026 con Claude Code como ag
 
 ## Ética y cuidados
 
-- Consentimiento grabado al inicio de cada relato.
+- Consentimiento explícito con una casilla antes de guardar cada relato.
 - Anonimización de personas vivas; nunca se ubican viviendas.
 - No se piden relatos de violencia en detalle.
 - Si una consulta sugiere riesgo, la Línea 100 y el 105 aparecen primero.
@@ -236,6 +236,7 @@ Construí Juntes entre el 9 y el 10 de noviembre de 2026 con Claude Code como ag
 - Cuando hay clave de API, el texto de consultas y relatos se envía al proveedor de IA configurado (hoy Google Gemini); sin clave, ese texto no sale de la computadora.
 - En el nivel gratuito de Gemini, el proveedor puede usar los datos para mejorar sus servicios; por eso el demo público usa solo datos sintéticos.
 - Los relatos y barreras reales no se suben al repositorio público; solo se publican los ejemplos sintéticos.
+- Próximo paso: consentimiento grabado al inicio de cada relato de audio.
 
 ## Licencia
 

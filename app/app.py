@@ -49,6 +49,10 @@ COLUMNAS_RELATOS = [
 ]
 
 NOMBRE_APP = "Juntes nos cuidamos y construimos"
+AVISO_DEMO = (
+    "Esta es una versión de demostración con datos sintéticos. No escribas datos personales "
+    "ni relatos reales de violencia. Si estás en riesgo, llama a la Línea 100 o al 105."
+)
 DISTRITOS = ["Villa El Salvador", "Ventanilla"]
 CENTROS = {"Villa El Salvador": (-12.2130, -76.9350), "Ventanilla": (-11.8770, -77.1300)}
 VISTA_MAPA = {
@@ -763,6 +767,8 @@ def main() -> None:
         <p>Tecnología para ciudades más justas, accesibles y cuidadoras.</p></div>""",
         unsafe_allow_html=True,
     )
+
+    st.warning(AVISO_DEMO, icon="⚠️")
 
     if not RUTA_RECURSOS.exists():
         st.error("No se encontró data/recursos.csv.")

@@ -1,0 +1,31 @@
+fecha_mes,distrito,ambito,dimension,tipo_necesidad,motivo,origen
+2026-08,Villa El Salvador,derechos_proteccion,fisica,violencia,dato_por_verificar,sintetico
+2026-08,Villa El Salvador,derechos_proteccion,comunicacional,violencia,dato_por_verificar,sintetico
+2026-08,Villa El Salvador,movilidad_seguridad,seguridad,movilidad,sin_recurso,sintetico
+2026-08,Villa El Salvador,movilidad_seguridad,territorial,movilidad,sin_recurso,sintetico
+2026-08,Villa El Salvador,accesibilidad_inclusion,fisica,accesibilidad,sin_recurso,sintetico
+2026-08,Ventanilla,derechos_proteccion,territorial,salud,dato_por_verificar,sintetico
+2026-08,Ventanilla,redes_cuidados,fisica,alimentacion,condicion_no_cumplida,sintetico
+2026-08,Ventanilla,movilidad_seguridad,seguridad,movilidad,sin_recurso,sintetico
+2026-08,Ventanilla,accesibilidad_inclusion,comunicacional,accesibilidad,sin_recurso,sintetico
+2026-09,Villa El Salvador,derechos_proteccion,institucional,ninez,dato_por_verificar,sintetico
+2026-09,Villa El Salvador,derechos_proteccion,seguridad,violencia,dato_por_verificar,sintetico
+2026-09,Villa El Salvador,derechos_proteccion,economica,salud,condicion_no_cumplida,sintetico
+2026-09,Villa El Salvador,cultura_recreacion,fisica,cultura_educacion,dato_por_verificar,sintetico
+2026-09,Villa El Salvador,cultura_recreacion,economica,cultura_educacion,condicion_no_cumplida,sintetico
+2026-09,Villa El Salvador,redes_cuidados,territorial,apoyo_comunitario,dato_por_verificar,sintetico
+2026-09,Ventanilla,derechos_proteccion,cultural,violencia,dato_por_verificar,sintetico
+2026-09,Ventanilla,derechos_proteccion,institucional,tramites,dato_por_verificar,sintetico
+2026-09,Ventanilla,derechos_proteccion,territorial,violencia,dato_por_verificar,sintetico
+2026-09,Ventanilla,redes_cuidados,territorial,alimentacion,sin_recurso,sintetico
+2026-09,Ventanilla,cultura_recreacion,territorial,cultura_educacion,sin_recurso,sintetico
+2026-10,Villa El Salvador,memoria,territorial,memoria,dato_por_verificar,sintetico
+2026-10,Villa El Salvador,movilidad_seguridad,seguridad,movilidad,sin_recurso,sintetico
+2026-10,Villa El Salvador,accesibilidad_inclusion,fisica,accesibilidad,sin_recurso,sintetico
+2026-10,Villa El Salvador,derechos_proteccion,comunicacional,salud,dato_por_verificar,sintetico
+2026-10,Villa El Salvador,derechos_proteccion,cultural,ninez,dato_por_verificar,sintetico
+2026-10,Ventanilla,accesibilidad_inclusion,fisica,accesibilidad,sin_recurso,sintetico
+2026-10,Ventanilla,movilidad_seguridad,territorial,movilidad,sin_recurso,sintetico
+2026-10,Ventanilla,redes_cuidados,economica,alimentacion,condicion_no_cumplida,sintetico
+2026-10,Ventanilla,derechos_proteccion,seguridad,violencia,dato_por_verificar,sintetico
+2026-10,Ventanilla,cultura_recreacion,comunicacional,cultura_educacion,dato_por_verificar,sintetico

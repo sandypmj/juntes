@@ -1,0 +1,10 @@
+streamlit
+pandas
+folium
+streamlit-folium
+anthropic
+python-dotenv
+pydantic
+
+# Opcional: transcripción local de audio. Si no se instala, la pestaña Voces permite pegar el texto.
+# faster-whisper

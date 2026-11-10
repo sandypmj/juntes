@@ -4,7 +4,7 @@
 
 > Juntes escucha las voces del barrio, conecta a las personas con servicios y redes que realmente pueden usar, y convierte cada barrera en evidencia para construir ciudades cuidadoras.
 
-**Demo:** _[URL pública — pendiente]_ · **Video de respaldo:** _[link — pendiente]_
+**Demo:** https://juntes-cuidamos.streamlit.app · **Video de respaldo:** _[link — pendiente]_
 
 ---
 
@@ -83,11 +83,11 @@ Conectamos a vecinas, jóvenes y personas mayores con rutas reales de acceso a d
 
 ## 5. Why now
 
-Hace tres años, transcribir y codificar cientos de relatos costaba meses. Hoy Whisper transcribe el audio en local, sin que la grabación salga de la computadora, y un LLM estructura cada relato o consulta en segundos y por centavos. Cuando hay clave de API, el texto de consultas y relatos se envía a la API de Anthropic; sin clave, ese texto no sale de la computadora.
+Hace tres años, transcribir y codificar cientos de relatos costaba meses. Hoy Whisper transcribe el audio en local, sin que la grabación salga de la computadora, y un LLM estructura cada relato o consulta en segundos y por centavos. Cuando hay clave de API, el texto de consultas y relatos se envía al proveedor de IA configurado (hoy Google Gemini); sin clave, ese texto no sale de la computadora.
 
 ## 6. Demo
 
-**URL:** _[pendiente]_
+**URL:** https://juntes-cuidamos.streamlit.app
 
 **Cómo correrlo en local**
 
@@ -122,7 +122,7 @@ Audio / texto ─► Whisper (local) ─► LLM con salida estructurada ─► B
 **Modelos y APIs, y por qué**
 
 - **Whisper en local:** el audio es sensible, por eso se transcribe en la computadora y no se envía a ningún servicio.
-- **LLM con salidas estructuradas:** clasifica relatos y consultas en ámbito, dimensión, lugar y barrera con un esquema fijo, para poder agregarlos. Cuando hay clave de API, el texto de consultas y relatos se envía a la API de Anthropic; sin clave, la app usa un respaldo por palabras clave y ese texto no sale de la computadora.
+- **LLM con salidas estructuradas:** clasifica relatos y consultas en ámbito, dimensión, lugar y barrera con un esquema fijo, para poder agregarlos. Cuando hay clave de API, el texto de consultas y relatos se envía al proveedor de IA configurado (hoy Google Gemini); sin clave, la app usa un respaldo por palabras clave y ese texto no sale de la computadora.
 - **Folium:** mapa con capas, liviano y sin costo.
 - **Texto a voz (opcional):** ruta sonora con voz sintética cuando la persona prefiere no ser reconocida.
 
@@ -163,7 +163,8 @@ _[Completar al final: qué archivos generó Claude Code, qué partes ajusté yo 
 - El asistente orienta; no reemplaza la atención ni da asesoría legal.
 - Cada dato indica si está verificado, reportado por la comunidad o sin verificar.
 - Los datos del demo son públicos, propios o sintéticos (marcados como tales).
-- El audio se transcribe en local. Cuando hay clave de API, el texto de consultas y relatos se envía a la API de Anthropic; sin clave, ese texto no sale de la computadora.
+- El audio se transcribe en local. Cuando hay clave de API, el texto de consultas y relatos se envía al proveedor de IA configurado (hoy Google Gemini); sin clave, ese texto no sale de la computadora.
+- En el nivel gratuito de Gemini, el proveedor puede usar los datos para mejorar sus servicios; por eso el demo público usa solo datos sintéticos.
 - Los relatos y barreras reales no se suben al repositorio público; solo se publican los ejemplos sintéticos.
 
 ## Licencia

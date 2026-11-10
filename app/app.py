@@ -23,12 +23,13 @@ sys.path.insert(0, str(ROOT))
 from ai import transcribir as transcripcion  # noqa: E402
 from ai.estructurar import (  # noqa: E402
     ETIQUETAS_NECESIDAD,
+    NOMBRES_MODO,
     ConsultaEstructurada,
     Resultado,
     estructurar_consulta,
     estructurar_relato,
-    hay_clave,
     normalizar,
+    proveedor_activo,
 )
 
 DATA = Path(os.environ.get("JUNTES_DATA_DIR", ROOT / "data"))
@@ -323,12 +324,12 @@ def mostrar_ayuda_urgente() -> None:
 
 
 def mostrar_fuente(resultado: Resultado) -> None:
-    if resultado.fuente == "api":
-        st.caption("Analizado con IA.")
+    if resultado.fuente != "respaldo":
+        st.caption(f"Analizado con {NOMBRES_MODO[resultado.fuente]}.")
     elif resultado.aviso:
         st.caption(f"{resultado.aviso} Analizado por palabras clave.")
     else:
-        st.caption("Analizado por palabras clave: agrega una clave de API en .env para usar IA.")
+        st.caption("Analizado por palabras clave.")
 
 
 def html_semaforo(recurso: dict) -> str:
@@ -768,8 +769,7 @@ def main() -> None:
         st.stop()
     recursos = cargar_recursos(RUTA_RECURSOS, RUTA_RECURSOS.stat().st_mtime)
 
-    if not hay_clave():
-        st.caption("Modo sin IA: la app clasifica por palabras clave.")
+    st.caption(f"Modo activo: {NOMBRES_MODO[proveedor_activo()]}.")
 
     asistente, voces, observatorio = st.tabs(["Asistente", "Voces", "Observatorio"])
     with asistente:

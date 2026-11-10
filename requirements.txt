@@ -4,6 +4,7 @@ folium
 streamlit-folium
 altair
 anthropic
+google-genai
 python-dotenv
 pydantic
 

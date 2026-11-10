@@ -1,7 +1,8 @@
 """Convierte consultas y relatos en datos estructurados.
 
-Usa la API de Anthropic cuando hay ANTHROPIC_API_KEY en .env. Si no hay clave, o si
-la llamada falla, usa reglas simples por palabras clave para que la app siga funcionando.
+Usa Claude si hay ANTHROPIC_API_KEY y Gemini si hay GEMINI_API_KEY, en .env o st.secrets.
+Si no hay clave, o si la llamada falla, usa reglas simples por palabras clave para que la
+app siga funcionando.
 """
 
 from __future__ import annotations
@@ -16,13 +17,24 @@ from typing import Generic, Literal, TypeVar
 import anthropic
 import streamlit as st
 from dotenv import load_dotenv
+from google import genai
+from google.genai import errors as errores_gemini
+from google.genai import types as tipos_gemini
 from pydantic import BaseModel, Field, ValidationError
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 MODELO = "claude-opus-5-5"
+MODELO_GEMINI = "gemini-3.5-flash"
 BETA_FALLBACK = "server-side-fallback-2026-07-01"
 CLAVE_DE_EJEMPLO = "tu_clave_aqui"
+
+Fuente = Literal["claude", "gemini", "respaldo"]
+NOMBRES_MODO: dict[str, str] = {
+    "claude": "Claude (Anthropic)",
+    "gemini": "Google Gemini",
+    "respaldo": "palabras clave, sin IA",
+}
 
 Ambito = Literal[
     "derechos_proteccion",
@@ -110,7 +122,7 @@ Esquema = TypeVar("Esquema", ConsultaEstructurada, RelatoEstructurado)
 @dataclass
 class Resultado(Generic[Esquema]):
     datos: Esquema
-    fuente: Literal["api", "respaldo"]
+    fuente: Fuente
     aviso: str | None = None
 
 
@@ -280,31 +292,73 @@ def _relato_respaldo(texto: str) -> RelatoEstructurado:
     )
 
 
-def _clave_en_secrets() -> str:
+def _clave_en_secrets(nombre: str) -> str:
     try:
-        return str(st.secrets.get("ANTHROPIC_API_KEY", ""))
+        return str(st.secrets.get(nombre, ""))
     except Exception:  # Streamlit lanza un error si no existe secrets.toml
         return ""
 
 
-def obtener_clave() -> str:
+def obtener_clave(nombre: str) -> str:
     """Busca la clave en .env o variables de entorno y luego en st.secrets."""
-    for clave in (os.environ.get("ANTHROPIC_API_KEY", ""), _clave_en_secrets()):
+    for clave in (os.environ.get(nombre, ""), _clave_en_secrets(nombre)):
         clave = clave.strip()
         if clave and clave != CLAVE_DE_EJEMPLO:
             return clave
     return ""
 
 
-def hay_clave() -> bool:
-    return bool(obtener_clave())
+def proveedor_activo() -> Fuente:
+    if obtener_clave("ANTHROPIC_API_KEY"):
+        return "claude"
+    if obtener_clave("GEMINI_API_KEY"):
+        return "gemini"
+    return "respaldo"
 
 
 def _cliente() -> anthropic.Anthropic:
-    return anthropic.Anthropic(api_key=obtener_clave(), timeout=45.0, max_retries=1)
+    return anthropic.Anthropic(api_key=obtener_clave("ANTHROPIC_API_KEY"), timeout=45.0, max_retries=1)
 
 
-def _llamar_api(instrucciones: str, texto: str, esquema: type[Esquema]) -> tuple[Esquema | None, str | None]:
+def _cliente_gemini() -> genai.Client:
+    return genai.Client(
+        api_key=obtener_clave("GEMINI_API_KEY"),
+        http_options=tipos_gemini.HttpOptions(timeout=45_000),
+    )
+
+
+def _llamar_gemini(instrucciones: str, texto: str, esquema: type[Esquema]) -> tuple[Esquema | None, str | None]:
+    """Devuelve (datos, None) o (None, motivo legible para mostrar el modo de respaldo)."""
+    try:
+        cliente = _cliente_gemini()  # se guarda en una variable: si no, Python lo cierra antes de usarlo
+        respuesta = cliente.models.generate_content(
+            model=MODELO_GEMINI,
+            contents=f"<texto>\n{texto}\n</texto>",
+            config=tipos_gemini.GenerateContentConfig(
+                system_instruction=instrucciones,
+                response_mime_type="application/json",
+                response_schema=esquema,
+            ),
+        )
+    except errores_gemini.ClientError as error:
+        if error.code == 429:
+            return None, "Gemini alcanzó su límite de uso por ahora."
+        if error.code in (401, 403) or "api key" in str(error).lower():
+            return None, "La clave de API no es válida."
+        return None, f"Gemini respondió con un error ({error.code})."
+    except errores_gemini.ServerError:
+        return None, "Gemini no está disponible por ahora."
+    except errores_gemini.APIError as error:
+        return None, f"Gemini respondió con un error ({error.code})."
+    except Exception:  # fallas de red o tiempo de espera: la app debe seguir funcionando
+        return None, "No se pudo conectar con Gemini."
+
+    if not isinstance(respuesta.parsed, esquema):
+        return None, "Gemini no estructuró este texto."
+    return respuesta.parsed, None
+
+
+def _llamar_claude(instrucciones: str, texto: str, esquema: type[Esquema]) -> tuple[Esquema | None, str | None]:
     """Devuelve (datos, None) o (None, motivo legible para mostrar el modo de respaldo)."""
     try:
         respuesta = _cliente().beta.messages.parse(
@@ -333,14 +387,17 @@ def _llamar_api(instrucciones: str, texto: str, esquema: type[Esquema]) -> tuple
     return respuesta.parsed_output, None
 
 
+def _con_ia(instrucciones: str, texto: str, esquema: type[Esquema]) -> tuple[Esquema | None, Fuente, str | None]:
+    proveedor = proveedor_activo()
+    if proveedor == "respaldo":
+        return None, "respaldo", None
+    llamar = _llamar_claude if proveedor == "claude" else _llamar_gemini
+    datos, aviso = llamar(instrucciones, texto, esquema)
+    return datos, proveedor if datos is not None else "respaldo", aviso
+
+
 def estructurar_consulta(texto: str, distrito: Distrito | None = None) -> Resultado[ConsultaEstructurada]:
-    fuente: Literal["api", "respaldo"] = "respaldo"
-    aviso = None
-    datos = None
-    if hay_clave():
-        datos, aviso = _llamar_api(INSTRUCCIONES_CONSULTA, texto, ConsultaEstructurada)
-        if datos is not None:
-            fuente = "api"
+    datos, fuente, aviso = _con_ia(INSTRUCCIONES_CONSULTA, texto, ConsultaEstructurada)
     if datos is None:
         datos = _consulta_respaldo(texto)
     datos.riesgo = datos.riesgo or detectar_riesgo(texto)
@@ -350,13 +407,7 @@ def estructurar_consulta(texto: str, distrito: Distrito | None = None) -> Result
 
 
 def estructurar_relato(texto: str) -> Resultado[RelatoEstructurado]:
-    fuente: Literal["api", "respaldo"] = "respaldo"
-    aviso = None
-    datos = None
-    if hay_clave():
-        datos, aviso = _llamar_api(INSTRUCCIONES_RELATO, texto, RelatoEstructurado)
-        if datos is not None:
-            fuente = "api"
+    datos, fuente, aviso = _con_ia(INSTRUCCIONES_RELATO, texto, RelatoEstructurado)
     if datos is None:
         datos = _relato_respaldo(texto)
     datos.riesgo = datos.riesgo or detectar_riesgo(texto)

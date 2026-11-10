@@ -55,7 +55,7 @@ Conectamos a vecinas, jóvenes y personas mayores con rutas reales de acceso a d
 
 1. Profesional con experiencia de trabajo en Villa El Salvador: "Al tener conocimiento de los derechos y los servicios disponibles de manera clara puede abrir un gran abanico de oportunidades". [Entrevista 1](docs/research/entrevista_01.md)
 2. Profesional tester en Argentina: "no sabía a dónde acudir". [Entrevista 2](docs/research/entrevista_02.md)
-3. [Pendiente: tercera conversación]
+3. [Dos pruebas de la app publicada](docs/research/pruebas_usuarias.md) con una especialista en género y gestión pública con experiencia en Villa El Salvador y Ventanilla, y una gestora cultural, madre, que la evaluó desde los servicios para infancias. Ambas entendieron el propósito; sus sugerencias se implementaron el mismo día.
 
 ## 4. Solución e insight
 

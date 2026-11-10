@@ -111,7 +111,11 @@ ETIQUETAS_MOTIVO = {
     "no_clasificada": "Consulta no clasificada",
 }
 MOTIVOS_SIN_ALTERNATIVA = {"sin_recurso", "condicion_no_cumplida", "no_clasificada"}
-TIPOS_COMUNITARIOS = {"organizacion_mujeres", "olla_comun"}
+TIPOS_COMUNITARIOS = {"organizacion_mujeres", "olla_comun", "comedor_adulto_mayor", "organizacion_adultos_mayores"}
+TIPOS_PERSONAS_MAYORES = {"adulto_mayor", "comedor_adulto_mayor", "organizacion_adultos_mayores"}
+# Recursos con sede en Lima que atienden a personas de cualquier distrito de Lima y Callao.
+ALCANCE_LIMA = "Lima"
+SIN_DATO = {"", "por verificar", "dato sintetico", "no aplica (atencion telefonica)"}
 TERMINOS_ESPERA = ["lista de espera", "listas de espera", "en espera", "sin cupos", "cupos limitados"]
 
 # Qué recursos responden a cada tipo de necesidad: por tipo de recurso o por texto.
@@ -119,7 +123,9 @@ TERMINOS_ESPERA = ["lista de espera", "listas de espera", "en espera", "sin cupo
 NECESIDADES = {
     "violencia": {"tipos": {"organizacion_mujeres"}, "texto": ["violencia"]},
     "salud": {"tipos": {"salud"}, "texto": []},
-    "alimentacion": {"tipos": {"olla_comun"}, "texto": []},
+    "alimentacion": {"tipos": {"olla_comun", "comedor_adulto_mayor"}, "texto": []},
+    "cuidado_infantil": {"tipos": {"cuidado_infantil"}, "texto": []},
+    "personas_mayores": {"tipos": TIPOS_PERSONAS_MAYORES, "texto": ["adultas mayores", "adultos mayores"]},
     "ninez": {"tipos": set(), "texto": ["nina", "nino"]},
     "tramites": {"tipos": set(), "texto": ["tramites"]},
     "cultura_educacion": {"tipos": {"espacio_verde", "espacio_cultural", "educacion"}, "texto": []},
@@ -192,7 +198,17 @@ def mes_actual() -> str:
 
 
 def es_nacional(recurso) -> bool:
-    return "nacional" in normalizar(recurso["nombre"])
+    return recurso["distrito"] != ALCANCE_LIMA and "nacional" in normalizar(recurso["nombre"])
+
+
+def disponible_en(recurso, distrito: str) -> bool:
+    return recurso["distrito"] in (distrito, ALCANCE_LIMA) or es_nacional(recurso)
+
+
+def zona(recurso) -> str:
+    if recurso["distrito"] == ALCANCE_LIMA:
+        return "Lima Metropolitana y Callao"
+    return "Nacional" if es_nacional(recurso) else recurso["distrito"]
 
 
 def es_relevante(recurso, consulta: ConsultaEstructurada) -> bool:
@@ -216,8 +232,8 @@ def puntaje(recurso, restricciones: dict[str, str]) -> float:
 
 def buscar_alternativas(recursos: pd.DataFrame, consulta: ConsultaEstructurada, distrito: str) -> list[dict]:
     restricciones = consulta.restricciones.activas()
-    en_distrito = [r for r in recursos.to_dict("records") if r["distrito"] == distrito or es_nacional(r)]
-    en_distrito.sort(key=lambda r: (-puntaje(r, restricciones), r["id"]))
+    en_distrito = [r for r in recursos.to_dict("records") if disponible_en(r, distrito)]
+    en_distrito.sort(key=lambda r: (-puntaje(r, restricciones), r["distrito"] != distrito, r["id"]))
 
     directas = [{**r, "complementaria": False} for r in en_distrito if es_relevante(r, consulta)][:3]
     if not directas:
@@ -261,6 +277,7 @@ def sugerir_comunitaria(
         r for r in recursos.to_dict("records")
         if r["distrito"] == distrito
         and es_comunitaria(r)
+        and (es_relevante(r, consulta) or r["ambito"] == consulta.ambito)
         and r["id"] not in usados
         and not tiene_lista_espera(r)
         and not any(r[d] == "no" for d in restricciones)
@@ -282,8 +299,7 @@ def detectar_barreras(alternativas: list[dict], consulta: ConsultaEstructurada) 
     restricciones = list(consulta.restricciones.activas())
     alternativas = [a for a in alternativas if not a["complementaria"]]
     if not alternativas:
-        motivo = "no_clasificada" if consulta.ambito == "sin_clasificar" else "sin_recurso"
-        return [(d, motivo) for d in (restricciones or ["territorial"])]
+        return [(d, "sin_recurso") for d in (restricciones or ["territorial"])]
 
     barreras = []
     for dimension in restricciones:
@@ -387,25 +403,57 @@ def aviso_verificacion(recurso: dict) -> None:
         partes.append("Estos datos aún no están verificados.")
     elif estado == "parcial":
         partes.append("Estos datos están verificados solo en parte.")
-    if recurso["coord_verificadas"] == "no":
-        partes.append("La ubicación es aproximada.")
     if partes:
         st.warning(" ".join(partes) + " Confirma antes de ir.", icon="⚠️")
 
 
+def tiene_dato(valor: str) -> bool:
+    return normalizar(valor.strip()) not in SIN_DATO
+
+
+def enlace_telefono(telefono: str) -> str:
+    """Convierte '(01) 319-2530 anexo 601' en un enlace tel: con solo el número."""
+    numero = "".join(c for c in normalizar(telefono).split("anexo")[0].split("(c")[0] if c.isdigit())
+    texto = html.escape(telefono)
+    return f'<a href="tel:{numero}">{texto}</a>' if numero else texto
+
+
+def mostrar_contacto(recurso: dict) -> None:
+    lineas = []
+    if tiene_dato(recurso["direccion"]):
+        lineas.append(f"**Dirección:** {html.escape(recurso['direccion'])}")
+    if tiene_dato(recurso["telefono"]):
+        lineas.append(f"**Teléfono:** {enlace_telefono(recurso['telefono'])}")
+    if tiene_dato(recurso["redes"]):
+        redes = recurso["redes"].strip()
+        enlace = f'<a href="{html.escape(redes)}" target="_blank">{html.escape(redes)}</a>' if redes.startswith("http") else html.escape(redes)
+        lineas.append(f"**Web o redes:** {enlace}")
+    if lineas:
+        st.markdown("  \n".join(lineas), unsafe_allow_html=True)
+    else:
+        st.caption("Dirección, teléfono y redes: por verificar.")
+
+    if recurso["estado_verificacion"] == "sintetico" or pd.isna(recurso["lat"]) or pd.isna(recurso["lon"]):
+        return
+    destino = f"{recurso['lat']},{recurso['lon']}"
+    st.link_button("📍 Cómo llegar", f"https://www.google.com/maps/search/?api=1&query={destino}")
+    if recurso["coord_verificadas"] != "si":
+        st.caption("La ubicación en el mapa es aproximada: confirma la dirección antes de ir.")
+
+
 def mostrar_alternativa(titulo: str, recurso: dict, restricciones: dict[str, str]) -> None:
     with st.container(border=True):
-        zona = "Nacional" if es_nacional(recurso) else recurso["distrito"]
         st.subheader(titulo)
-        st.caption(f"{zona} · {ETIQUETAS_AMBITO.get(recurso['ambito'], recurso['ambito'])}")
+        st.caption(f"{zona(recurso)} · {ETIQUETAS_AMBITO.get(recurso['ambito'], recurso['ambito'])}")
         if recurso["complementaria"]:
             st.info("Alternativa complementaria: es del mismo ámbito, pero puede no resolver lo que necesitas.")
         st.write(recurso["descripcion"])
         st.markdown(html_semaforo(recurso), unsafe_allow_html=True)
         st.markdown(
             f"**Costo:** {recurso['costo']}  \n**Horario:** {recurso['horario']}  \n"
-            f"**Requisitos:** {recurso['requisitos']}  \n**Cómo llegar o contactar:** {recurso['canales']}"
+            f"**Requisitos:** {recurso['requisitos']}  \n**Canales de atención:** {recurso['canales']}"
         )
+        mostrar_contacto(recurso)
         mostrar_barreras_recurso(recurso, restricciones)
         aviso_verificacion(recurso)
 
@@ -463,7 +511,11 @@ def pestana_asistente(recursos: pd.DataFrame) -> None:
             st.markdown(f"**También puedes buscar apoyo comunitario.** {motivo}")
             mostrar_alternativa(f"Alternativa comunitaria: {comunitaria['nombre']}", comunitaria, restricciones)
     else:
-        st.info("Por ahora no tenemos una alternativa registrada para esta necesidad en tu distrito.")
+        st.info(
+            f"Todavía no tenemos este servicio en el directorio de {distrito}. "
+            "No queremos mostrarte algo que no responde a lo que buscas: registramos este vacío "
+            "para que el Observatorio lo haga visible."
+        )
 
     if barreras and guardadas:
         st.success("Registramos esta barrera de forma anónima para el Observatorio. No guardamos lo que escribiste.")
@@ -748,7 +800,7 @@ def pestana_observatorio(recursos: pd.DataFrame) -> None:
     visibles = con_coordenadas if filtro == "Todos" else con_coordenadas[con_coordenadas["distrito"] == filtro]
     st.caption(
         "Las coordenadas son aproximadas y aún no están verificadas. "
-        f"{len(recursos) - len(con_coordenadas)} recurso(s) telefónico(s) no aparecen en el mapa."
+        f"{len(recursos) - len(con_coordenadas)} recurso(s) telefónico(s) o con sede fuera del distrito no aparecen en el mapa."
     )
     st_folium(
         mapa_recursos(visibles, filtro),

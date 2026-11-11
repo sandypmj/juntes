@@ -1,6 +1,6 @@
-# Pruebas con usuarias de la app publicada
+# Pruebas con personas usuarias de la app publicada
 
-- **Fecha:** 10 de noviembre de 2026
+- **Fecha:** 10 de noviembre de 2026 (las tres pruebas)
 - **Versión probada:** https://juntes-cuidamos.streamlit.app (con Google Gemini)
 - **Modalidad:** a distancia, por WhatsApp. Cada persona usó la app por su cuenta y envió sus comentarios por escrito.
 - **Privacidad:** no registramos nombres; solo el rol de cada persona.
@@ -41,6 +41,18 @@ Después envió dos comentarios más:
 
 > "No sentí confusión al usar la herramienta como tal, sino que todo era muy plano (eso es un tema de diagramación); las imágenes ayudan más a socializar la información."
 
+## Prueba 3
+
+**Perfil.** Sociólogo con perspectiva de género que ha trabajado en Lima y en Buenos Aires.
+
+**Respuestas textuales**
+
+> "Es práctica y útil."
+
+> "Se entiende muy bien, son opciones útiles. Imagino que se ampliarán las opciones de distrito."
+
+> "Sí he necesitado encontrar servicios públicos, pero me han sido muy accesibles, principalmente por el dominio de las herramientas digitales. Comprendo que un obstáculo para muchas personas puede ser que las aplicaciones o las plataformas no sean muy accesibles."
+
 ## Hallazgos
 
 **Lo que funcionó**
@@ -56,6 +68,12 @@ Después envió dos comentarios más:
 - **Datos de contacto.** Las alternativas no mostraban dirección, teléfono, redes sociales ni cómo llegar.
 - **Movilidad y seguridad.** "Paraderos seguros" no dio opciones. No hay un servicio que garantice un paradero seguro, pero la app tampoco mostraba lo que sí tiene: los relatos de las vecinas, los contactos de emergencia y la posibilidad de contar la propia experiencia.
 - **Diseño plano.** La información se entendía, pero todo se veía igual. Las imágenes ayudan a socializar la información.
+
+**Lo que confirmó la tercera prueba**
+
+- **Comprensión y utilidad confirmadas.** La app "se entiende muy bien" y las opciones son útiles.
+- **Ampliar distritos.** Varias pruebas piden más distritos, además de Villa El Salvador y Ventanilla.
+- **La brecha digital es una barrera real.** Corresponde a la dimensión comunicacional: quien no domina las herramientas digitales tiene más difícil encontrar servicios, incluso usando Juntes.
 
 **A quién le sirve**
 
@@ -92,5 +110,7 @@ Implementado después de los dos comentarios adicionales:
 ## Próximos pasos
 
 - **Fotos de los lugares:** antes de publicarlas pediremos permiso a las organizaciones y servicios.
-- **Ampliar a otros distritos,** como pidió la segunda usuaria.
+- **Ampliar a otros distritos,** como pidieron la segunda y la tercera prueba.
+- **Lenguaje simple y relatos por voz,** para que escribir no sea una condición para usar la app.
+- **Acompañamiento de facilitadoras y organizaciones comunitarias** para quienes no usan apps, como pidió la tercera prueba al señalar la brecha digital.
 - **Verificar en campo** las sedes de Cuna Más y del CIAM en cada distrito, y sumar organizaciones reales de personas adultas mayores.

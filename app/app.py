@@ -822,6 +822,23 @@ def punto(lat: float, lon: float, color: str, popup: str, titulo: str) -> folium
     )
 
 
+def una_linea(texto: str, limite: int = 140) -> str:
+    """Primera oración del texto, recortada para que quepa en una línea del popup."""
+    texto = texto.replace("(Relato sintético de ejemplo)", "").strip()
+    oracion = texto.split(". ")[0].strip()
+    return oracion if len(oracion) <= limite else oracion[: limite - 1].rstrip() + "…"
+
+
+def popup_punto(nombre: str, ambito: str, linea: str, sintetico: bool, nota: str) -> str:
+    marca = "<b>EJEMPLO SINTÉTICO</b><br>" if sintetico else ""
+    return (
+        f"{marca}<b>{html.escape(nombre)}</b>"
+        f"<br><b>Ámbito:</b> {html.escape(ETIQUETAS_AMBITO.get(ambito, ambito))}"
+        f"<br>{html.escape(una_linea(linea))}"
+        f"<br><i>{html.escape(nota)}</i>"
+    )
+
+
 def nombre_capa(etiqueta: str, color: str, cantidad: int) -> str:
     return f'<span style="color:{color}">●</span> {html.escape(etiqueta)} ({cantidad})'
 
@@ -832,15 +849,10 @@ def mapa_relatos(relatos: pd.DataFrame, filtro: str) -> folium.Map:
         filas = relatos[relatos["capa"] == capa]
         grupo = folium.FeatureGroup(name=nombre_capa(etiqueta, color, len(filas)))
         for _, fila in filas.iterrows():
-            marca = "<b>EJEMPLO SINTÉTICO</b><br>" if fila["origen"] == "sintetico" else ""
-            memoria = f"<br><b>Memoria:</b> {html.escape(fila['memoria'])}" if fila["memoria"] else ""
-            emociones = f"<br><b>Emociones:</b> {html.escape(fila['emociones'])}" if fila["emociones"] else ""
-            texto = html.escape(fila["texto"][:400])
-            popup = (
-                f"{marca}<b>{html.escape(etiqueta)}</b><br>{texto}{emociones}{memoria}"
-                f"<br><i>{html.escape(fila['ubicacion'])}</i>"
-            )
-            punto(float(fila["lat"]), float(fila["lon"]), color, popup, f"{etiqueta}: {fila['distrito']}").add_to(grupo)
+            lugar = fila["lugares"].split(";")[0].strip()
+            nombre = lugar or f"{etiqueta}: {fila['distrito']}"
+            popup = popup_punto(nombre, fila["ambito"], fila["texto"], fila["origen"] == "sintetico", fila["ubicacion"])
+            punto(float(fila["lat"]), float(fila["lon"]), color, popup, nombre).add_to(grupo)
         grupo.add_to(mapa)
     folium.LayerControl(collapsed=False).add_to(mapa)
     return mapa
@@ -969,13 +981,9 @@ def mapa_recursos(recursos: pd.DataFrame, filtro: str) -> folium.Map:
         color = COLOR_AMBITO.get(ambito, "#6F6A64")
         grupo = folium.FeatureGroup(name=nombre_capa(etiqueta, color, len(filas)))
         for _, fila in filas.iterrows():
-            marca = "<b>EJEMPLO SINTÉTICO</b><br>" if fila["estado_verificacion"] == "sintetico" else ""
-            popup = (
-                f"{marca}<b>{html.escape(fila['nombre'])}</b><br>{html.escape(fila['descripcion'])}"
-                f"<br><b>Verificación:</b> {html.escape(fila['estado_verificacion'])}"
-                "<br><i>Ubicación aproximada</i>"
-            )
-            punto(fila["lat"], fila["lon"], color, popup, fila["nombre"]).add_to(grupo)
+            sintetico = fila["estado_verificacion"] == "sintetico"
+            popup = popup_punto(fila["nombre"], ambito, fila["descripcion"], sintetico, "Ubicación aproximada")
+            punto(float(fila["lat"]), float(fila["lon"]), color, popup, fila["nombre"]).add_to(grupo)
         grupo.add_to(mapa)
     folium.LayerControl(collapsed=False).add_to(mapa)
     return mapa

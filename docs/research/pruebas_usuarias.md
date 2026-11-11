@@ -53,6 +53,16 @@ Después envió dos comentarios más:
 
 > "Sí he necesitado encontrar servicios públicos, pero me han sido muy accesibles, principalmente por el dominio de las herramientas digitales. Comprendo que un obstáculo para muchas personas puede ser que las aplicaciones o las plataformas no sean muy accesibles."
 
+## Comentario del 11 de noviembre de 2026
+
+Comentario recibido por escrito, sin nombre.
+
+> "No puedo ver las referencias que pusiste en los puntos en el mapa."
+
+> "Los comedores tienen cuotas para adultos mayores, personas enfermas, personas con discapacidad, etc. Los registran como casos sociales para darles un menú."
+
+**Qué cambiamos.** En los mapas de Voces y del Observatorio, cada punto muestra su nombre al pasar el mouse y, al hacer clic, una ventana con el nombre, el ámbito y una línea de la descripción o del relato.
+
 ## Hallazgos
 
 **Lo que funcionó**
@@ -114,3 +124,4 @@ Implementado después de los dos comentarios adicionales:
 - **Lenguaje simple y relatos por voz,** para que escribir no sea una condición para usar la app.
 - **Acompañamiento de facilitadoras y organizaciones comunitarias** para quienes no usan apps, como pidió la tercera prueba al señalar la brecha digital.
 - **Verificar en campo** las sedes de Cuna Más y del CIAM en cada distrito, y sumar organizaciones reales de personas adultas mayores.
+- **Casos sociales en los comedores,** como señaló el comentario del 11 de noviembre: incluir en las fichas de comedores si atienden casos sociales y cómo acceder, y que el Asistente lo sugiera a personas adultas mayores o con discapacidad.

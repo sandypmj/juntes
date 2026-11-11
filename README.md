@@ -5,7 +5,7 @@
 > Juntes escucha las voces del barrio, conecta a las personas con servicios y redes que realmente pueden usar, y convierte cada barrera en evidencia para construir ciudades cuidadoras.
 
 **Demo:** https://juntes-cuidamos.streamlit.app  
-**Video de respaldo:** [pendiente]
+**Video de respaldo:** https://drive.google.com/file/d/1MgkgzCQPuX2LosaALb7C1wDlrMrqOQb9/view?usp=sharing
 
 ---
 
@@ -89,7 +89,7 @@ Hace tres años, transcribir y codificar cientos de relatos costaba meses. Hoy W
 ## 6. Demo
 
 **URL:** https://juntes-cuidamos.streamlit.app  
-**Video de respaldo:** [pendiente]
+**Video de respaldo:** https://drive.google.com/file/d/1MgkgzCQPuX2LosaALb7C1wDlrMrqOQb9/view?usp=sharing
 
 **Cómo correrlo en local**
 
